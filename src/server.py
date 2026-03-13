@@ -6,7 +6,7 @@ import threading
 import time
 import os
 
-from src.core.ip import build_ipv4_header, parse_ipv4_header
+from src.core.ip import build_ipv4_header, parse_ipv4_header, IPV4_HEADER_LEN
 from src.core.udp import build_udp_header, parse_udp_header
 from src.core.packet import (
     pack_packet,
@@ -59,7 +59,7 @@ class SRFTServer:
     def send_udp_packet(self, dst_ip, src_port, dst_port, payload):
 
         udp_header = build_udp_header(src_port, dst_port, len(payload))
-        ip_header = build_ipv4_header(self.server_ip, dst_ip, len(udp_header) + len(payload))
+        ip_header = build_ipv4_header(self.server_ip, dst_ip, IPV4_HEADER_LEN + len(udp_header) + len(payload))
 
         packet = ip_header + udp_header + payload
 

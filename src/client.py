@@ -3,7 +3,7 @@ import socket
 import threading
 import time
 
-from src.core.ip import build_ipv4_header, parse_ipv4_header, UDP_PROTOCOL
+from src.core.ip import build_ipv4_header, parse_ipv4_header, UDP_PROTOCOL, IPV4_HEADER_LEN
 from src.core.udp import build_udp_header, parse_udp_header
 from src.core.packet import (
     pack_packet,
@@ -52,7 +52,7 @@ class SRFTClient:
     # Raw packet send
     def send_udp_packet(self, dst_ip, src_port, dst_port, payload):
         udp_header = build_udp_header(src_port, dst_port, len(payload))
-        ip_header = build_ipv4_header(self.client_ip, dst_ip, len(udp_header) + len(payload))
+        ip_header = build_ipv4_header(self.client_ip, dst_ip, IPV4_HEADER_LEN + len(udp_header) + len(payload))
 
         packet = ip_header + udp_header + payload
         self.send_socket.sendto(packet, (dst_ip, 0))
