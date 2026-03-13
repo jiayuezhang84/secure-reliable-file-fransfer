@@ -3,7 +3,7 @@ import socket
 import threading
 import time
 
-from src.core.ip import build_ipv4_header, parse_ipv4_header, UDP_PROTOCOL, IPV4_HEADER_LEN
+from src.core.ip import build_ipv4_header, parse_ipv4_header, IPV4_HEADER_LEN
 from src.core.udp import build_udp_header, parse_udp_header
 from src.core.packet import (
     pack_packet,
