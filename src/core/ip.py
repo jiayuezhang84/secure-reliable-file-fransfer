@@ -1,10 +1,15 @@
 import os
 import socket
 import struct
+import sys
 from typing import Dict, Tuple
 
 UDP_PROTO = 17
 IPV4_HEADER_LEN = 20
+
+""" darwin is the sys.platform value for mac """ 
+ON_MAC_PLATFORM = sys.platform == "darwin"
+SEND_PROTOCOL = socket.IPPROTO_UDP if ON_MAC_PLATFORM else socket.IPPROTO_RAW
 
 def ipv4_checksum(header: bytes) -> int:
     if len(header) % 2 == 1:
@@ -17,6 +22,53 @@ def ipv4_checksum(header: bytes) -> int:
         s = (s & 0xFFFF) + (s >> 16)
 
     return (~s) & 0xFFFF
+
+
+"""
+inits and returns a send socket based on platform/os
+"""
+def init_send_socket() -> socket.socket:
+    send_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, SEND_PROTOCOL)
+    send_socket.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+    return send_socket
+
+"""
+packs and returns an ipv4 header based on platform/os
+"""
+def pack_ipv4_header(
+    ver_ihl: int,
+    tos: int,
+    total_len: int,
+    ident: int,
+    flags_frag: int,
+    ttl: int,
+    proto: int,
+    checksum: int,
+    src: bytes,
+    dst: bytes,
+) -> bytes:
+    if ON_MAC_PLATFORM:
+        return (
+            struct.pack("!BB", ver_ihl, tos)
+            + struct.pack("=H", total_len)
+            + struct.pack("!H", ident)
+            + struct.pack("=H", flags_frag)
+            + struct.pack("!BBH4s4s", ttl, proto, checksum, src, dst)
+        )
+
+    return struct.pack(
+        "!BBHHHBBH4s4s",
+        ver_ihl,
+        tos,
+        total_len,
+        ident,
+        flags_frag,
+        ttl,
+        proto,
+        checksum,
+        src,
+        dst,
+    )
 
 
 def build_ipv4_header(
@@ -44,8 +96,7 @@ def build_ipv4_header(
     src = socket.inet_aton(src_ip)
     dst = socket.inet_aton(dst_ip)
 
-    header_wo_sum = struct.pack(
-        "!BBHHHBBH4s4s",
+    header_wo_sum = pack_ipv4_header(
         ver_ihl,
         tos,
         total_len,
@@ -60,8 +111,7 @@ def build_ipv4_header(
 
     checksum = ipv4_checksum(header_wo_sum)
 
-    header = struct.pack(
-        "!BBHHHBBH4s4s",
+    header = pack_ipv4_header(
         ver_ihl,
         tos,
         total_len,

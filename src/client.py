@@ -3,7 +3,7 @@ import socket
 import threading
 import time
 
-from src.core.ip import build_ipv4_header, parse_ipv4_header, IPV4_HEADER_LEN
+from src.core.ip import build_ipv4_header, init_send_socket, parse_ipv4_header, IPV4_HEADER_LEN
 from src.core.udp import build_udp_header, parse_udp_header
 from src.core.packet import (
     pack_packet,
@@ -30,8 +30,7 @@ class SRFTClient:
         self.ack_interval = cfg.timers.ack_interval_ms / 1000
 
         # raw sockets
-        self.send_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
-        self.send_socket.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+        self.send_socket = init_send_socket()
 
         self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_UDP)
 
