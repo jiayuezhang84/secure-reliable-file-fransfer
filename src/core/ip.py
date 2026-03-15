@@ -2,22 +2,14 @@ import os
 import socket
 import struct
 from typing import Dict, Tuple
+from src.core.checksum_utils import ipv4_header_checksum
 
 UDP_PROTO = 17
 IPV4_HEADER_LEN = 20
 
-def ipv4_checksum(header: bytes) -> int:
-    if len(header) % 2 == 1:
-        header += b"\x00"
-
-    s = 0
-    for i in range(0, len(header), 2):
-        word = (header[i] << 8) + header[i + 1]
-        s += word
-        s = (s & 0xFFFF) + (s >> 16)
-
-    return (~s) & 0xFFFF
-
+# Note: ipv4_checksum was previously defined here inline.
+# Replaced with ipv4_header_checksum from checksum_utils.py
+# to centralize all checksum logic in one place.
 
 def build_ipv4_header(
     src_ip: str,
@@ -58,7 +50,7 @@ def build_ipv4_header(
         dst,
     )
 
-    checksum = ipv4_checksum(header_wo_sum)
+    checksum = ipv4_header_checksum(header_wo_sum) # changed from ipv4_checksum
 
     header = struct.pack(
         "!BBHHHBBH4s4s",
