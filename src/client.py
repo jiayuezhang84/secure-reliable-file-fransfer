@@ -3,8 +3,9 @@ import socket
 import threading
 import time
 
-from src.core.ip import build_ipv4_header, init_send_socket, parse_ipv4_header, IPV4_HEADER_LEN
-from src.core.udp import build_udp_header, parse_udp_header
+from src.core.ip import IPV4_HEADER_LEN, RECEIVE_TIMEOUT, IP_SRC, IP_DST
+from src.core.ip import build_ipv4_header, init_send_socket, parse_ipv4_header
+from src.core.udp import build_udp_header, parse_udp_header, UDP_SRC, UDP_DST
 from src.core.packet import (
     pack_packet,
     unpack_packet,
@@ -13,6 +14,8 @@ from src.core.packet import (
     TYPE_ACK,
     TYPE_FIN,
     TYPE_ERR,
+    SEQ,
+    TYPE
 )
 
 
@@ -33,6 +36,10 @@ class SRFTClient:
         self.send_socket = init_send_socket()
 
         self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_UDP)
+        
+        """ binding receive socket at client IP, with a timeout """
+        self.recv_socket.bind((self.client_ip, 0))
+        self.recv_socket.settimeout(RECEIVE_TIMEOUT)
 
         # receive state
         self.expected_seq = 0
@@ -47,6 +54,11 @@ class SRFTClient:
         self.output_fp = open(self.output_file, "wb")
 
         self.last_ack_sent = 0.0
+        """ initialize ack_needed from client to false, 
+            this tracks if an ack still needs to be sent from client to server after 
+            receiving payload 
+        """
+        self.ack_needed = False
 
     # Raw packet send
     def send_udp_packet(self, dst_ip, src_port, dst_port, payload):
@@ -73,16 +85,112 @@ class SRFTClient:
         print(f"[CLIENT] sent ACK {ack_number}")
 
     # Handle packet
-    def handle_data(self):
-       pass
+    def handle_data(self, received_seq, payload):
+        """ lock to protect expected_seq and buffer from race conditions """
+        with self.lock:
+            """ if the received seq number is lower than expected(OLD PACKET), then need to ack again """
+            if received_seq < self.expected_seq:
+                self.ack_needed = True
+                return
+
+            """ if received seq number is equal to expected, then need to write output and increment expected """
+            if received_seq == self.expected_seq:
+                self.output_fp.write(payload)
+                self.expected_seq += 1
+
+                """ handle out of order receival """
+                """ check for next consecutive payloads already received in buffer and write them out """
+                while self.expected_seq in self.buffer:
+                    self.output_fp.write(self.buffer.pop(self.expected_seq))
+                    self.expected_seq += 1
+            elif received_seq not in self.buffer:
+                """ sequence number greater than expected, receiving later packets earlier out of order, add to buffer """
+                self.buffer[received_seq] = payload
+
+            """ after processing packet based on received_seq, need to acknowledge processed """
+            self.ack_needed = True
 
     # Receive loop
     def receive_loop(self):
-        pass
+        """ run while client is running """
+        while self.running:
+            try:
+                packet, _ = self.recv_socket.recvfrom(65535)
+            except socket.timeout:
+                """ just keep listening if socket timed out trying to receive a message """
+                continue
+
+            try:
+                """ unpack the ip and udp data, and get the offset where SRFT payload content starts """
+                ip_header_data, ip_header_len = parse_ipv4_header(packet)
+                udp_header_data, content_start_index = parse_udp_header(packet, ip_header_len)
+            except ValueError:
+                """ just keep listening if bad packets received """
+                continue
+
+            """ early exit further processing for packets not coming from intended src to intended dst """
+            if ip_header_data[IP_SRC] != self.server_ip or ip_header_data[IP_DST] != self.client_ip:
+                continue
+            if udp_header_data[UDP_SRC] != self.server_port or udp_header_data[UDP_DST] != self.client_port:
+                continue
+
+
+            """ parse the SRFT data """
+            try:
+                header, payload = unpack_packet(packet[content_start_index:])
+            except ValueError:
+                """ keep listening for the next packet parsing SRFT fails """
+                continue
+
+            if header[TYPE] == TYPE_DATA:
+                """ process data packet into buffer or writing it out """
+                self.handle_data(header[SEQ], payload)
+            elif header[TYPE] == TYPE_FIN:
+                """ if a FIN type packet received from server, we must finish the file transfer """
+                transfer_complete = False
+
+                """ lock to protect expected_seq and ack_number from race conditions """
+                with self.lock:
+                    """ if received sequence for FIN is expected sequence, then we can complete, """
+                    if header[SEQ] == self.expected_seq:
+                        self.expected_seq += 1
+                        ack_number = self.expected_seq
+                        transfer_complete = True
+                    else:
+                        """ we cant complete yet, packets missing between fin seq and expected seq
+                        becasue fin came too early """
+                        ack_number = self.expected_seq
+
+                """ send the current cumulative ack """
+                self.send_ack(ack_number)
+
+                if transfer_complete:
+                    self.finished = True
+                    self.running = False
+            elif header[TYPE] == TYPE_ERR:
+                """ error case header handling """
+                self.server_error = payload.decode()
+                self.running = False
 
     # ACK loop
     def ack_loop(self):
-        pass
+        """ run while client is running """
+        while self.running:
+            """ wait a little to ack  """
+            time.sleep(self.ack_interval)
+
+            """ lock to protect expected_seq and ack_number from race conditions """
+            with self.lock:
+                if not self.ack_needed:
+                    continue
+
+                ack_number = self.expected_seq
+
+            """ sends cumulative ack """
+            self.send_ack(ack_number)
+
+            with self.lock:
+                self.ack_needed = ack_number != self.expected_seq
 
     # Start client
     def start(self):
@@ -104,6 +212,8 @@ class SRFTClient:
 
         if self.finished:
             print(f"[CLIENT] file saved as {self.output_file}")
+        elif self.server_error:
+            print(f"[CLIENT] server error: {self.server_error}")
         else:
             print("[CLIENT] transfer did not complete cleanly")
 

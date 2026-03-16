@@ -2,10 +2,15 @@ import os
 import socket
 import struct
 import sys
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 UDP_PROTO = 17
 IPV4_HEADER_LEN = 20
+RECEIVE_TIMEOUT = 0.3
+
+""" header keys """
+IP_SRC = "src"
+IP_DST = "dst"
 
 """ darwin is the sys.platform value for mac """ 
 ON_MAC_PLATFORM = sys.platform == "darwin"
@@ -75,7 +80,7 @@ def build_ipv4_header(
     src_ip: str,
     dst_ip: str,
     total_len: int,
-    ident: int | None = None,
+    ident: Optional[int] = None,
     ttl: int = 64,
     proto: int = UDP_PROTO,
     tos: int = 0,
@@ -156,7 +161,7 @@ def parse_ipv4_header(packet: bytes) -> Tuple[Dict, int]:
         "ttl": ttl,
         "proto": proto,
         "checksum": hdr_csum,
-        "src": socket.inet_ntoa(struct.pack("!I", src_i)),
-        "dst": socket.inet_ntoa(struct.pack("!I", dst_i)),
+        IP_SRC: socket.inet_ntoa(struct.pack("!I", src_i)),
+        IP_DST: socket.inet_ntoa(struct.pack("!I", dst_i)),
     }
     return info, ip_hlen

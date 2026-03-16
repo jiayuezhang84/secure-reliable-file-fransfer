@@ -12,6 +12,12 @@ TYPE_ERR  = 5
 HEADER_FORMAT = "!4sBBHIIHHHH"
 HEADER_LEN = struct.calcsize(HEADER_FORMAT)
 
+""" header keys """
+SEQ = "seq"
+TYPE = "type"
+PAYLOAD = "payload"
+SENT_AT = "sent_at"
+ACK = "ack"
 
 def checksum16(data: bytes) -> int:
     if len(data) % 2 == 1:
@@ -97,9 +103,9 @@ def unpack_packet(packet: bytes):
         raise ValueError("Checksum mismatch")
 
     return {
-        "type": msg_type,
-        "seq": seq,
-        "ack": ack,
+        TYPE: msg_type,
+        SEQ: seq,
+        ACK: ack,
         "payload_len": payload_len,
         "window": window
     }, payload

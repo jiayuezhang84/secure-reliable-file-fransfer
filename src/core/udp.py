@@ -3,6 +3,11 @@ from typing import Dict, Tuple
 
 UDP_HEADER_LEN = 8
 
+""" header keys """
+UDP_SRC = "src_port"
+UDP_DST = "dst_port"
+
+
 def build_udp_header(src_port: int, dst_port: int, payload_len: int, checksum: int = 0) -> bytes:
     """
     UDP header (8 bytes)
@@ -22,8 +27,8 @@ def parse_udp_header(packet: bytes, ip_header_len: int) -> Tuple[Dict, int]:
     src_port, dst_port, length, checksum = struct.unpack("!HHHH", packet[start : end])
 
     info = {
-        "src_port": src_port,
-        "dst_port": dst_port,
+        UDP_SRC: src_port,
+        UDP_DST: dst_port,
         "length": length,
         "checksum": checksum,
     }
