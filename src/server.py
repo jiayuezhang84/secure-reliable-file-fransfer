@@ -73,7 +73,7 @@ class SRFTServer:
     # Raw packet send
     def send_udp_packet(self, dst_ip, src_port, dst_port, payload):
 
-        udp_header = build_udp_header(src_port, dst_port, len(payload))
+        udp_header = build_udp_header(src_port, dst_port, payload, self.server_ip, dst_ip)
         ip_header = build_ipv4_header(self.server_ip, dst_ip, IPV4_HEADER_LEN + len(udp_header) + len(payload))
 
         packet = ip_header + udp_header + payload
@@ -211,7 +211,7 @@ class SRFTServer:
             for seq, payload, msg_type in timed_out:
                 self.send_udp_packet(client_ip, self.server_port, client_port, payload)
                 self.retransmissions += 1
-                packet_type = TYPE_FIN if msg_type == TYPE_FIN else TYPE_DATA
+                packet_type = "FIN" if msg_type == TYPE_FIN else "DATA"
                 print(f"[SERVER] retransmitted {packet_type} seq {seq}")
 
     # ACK processing

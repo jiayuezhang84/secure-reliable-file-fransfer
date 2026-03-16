@@ -62,7 +62,7 @@ class SRFTClient:
 
     # Raw packet send
     def send_udp_packet(self, dst_ip, src_port, dst_port, payload):
-        udp_header = build_udp_header(src_port, dst_port, len(payload))
+        udp_header = build_udp_header(src_port, dst_port, payload, self.client_ip, dst_ip)
         ip_header = build_ipv4_header(self.client_ip, dst_ip, IPV4_HEADER_LEN + len(udp_header) + len(payload))
 
         packet = ip_header + udp_header + payload
