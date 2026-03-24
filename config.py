@@ -44,8 +44,20 @@ def load_config(path: str):
     data["transfer"].setdefault("send_window_packets", 64)
     data["timers"].setdefault("rto_ms", 300)
     data["timers"].setdefault("ack_interval_ms", 50)
+    
+    # validate PSK
+    if data["security"].get("enabled", False):
+        psk = data["security"].get("psk", "")
+        if len(psk) < 32:
+            raise ConfigError("PSK must be at least 32 chars")
 
     return _to_namespace(data)
+
+# extract psk from config as bytes
+def get_psk(cfg) -> bytes:
+    if not cfg.security.enabled:
+        return b""
+    return cfg.security.psk.encode()
 
 
 def parse_args():

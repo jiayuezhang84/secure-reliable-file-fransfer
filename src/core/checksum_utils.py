@@ -1,4 +1,5 @@
 import struct
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
 def pad_if_odd_length(data):
@@ -96,3 +97,27 @@ def udp_checksum_ipv4(src_ip_str, dst_ip_str, udp_header_bytes, udp_payload_byte
 
     data_to_check = pseudo_header + udp_header_bytes + udp_payload_bytes
     return internet_checksum(data_to_check)
+
+MAX_SEQ = 2**32
+aead_failures = 0
+
+# aad init
+def build_add(session_id: bytes, seq: int, ack:int, flags:int) -> bytes:
+    return(
+        session_id +
+        struct.pack("!I", seq % MAX_SEQ) +
+        struct.pack("!I", ack % MAX_SEQ) + 
+        struct.pack("!B", flags & 0xFF)
+    )
+    
+def encrypt_packet(plaintext: bytes, enc_key: bytes, nonce: bytes, aad: bytes) -> bytes:
+    return AESGCM(enc_key).encrypt(nonce, plaintext, aad)
+
+def decrypt_packet(ciphertext: bytes, enc_key: bytes, nonce: bytes, aad: bytes) -> bytes | None:
+    global aead_failures
+    try:
+        return AESGCM(enc_key).decrypt(nonce, ciphertext, aad)
+    except Exception:
+        aead_failures += 1
+        return None
+

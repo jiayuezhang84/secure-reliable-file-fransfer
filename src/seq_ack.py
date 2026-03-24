@@ -50,11 +50,19 @@ class ReceiverACKTracker:
 		self.expected    = 0 # next seq#
 		self.ooo_buffer  = {} # early arrivals: {seq_num: payload} 
 		self._since_ack  = 0 # counter for cumulative ACK
+  
+		# tracks delivered seq#
+		self.received_set = set()
+		self.replay_drops = 0 # counter
    
   # public api 
 	def receive(self, seq: int, payload: bytes) -> tuple[list[bytes], int | None]:
     # delivered: list of in-order payload
     # ack_to_send: cumulative ACK to send back
+    
+		if seq in self.received_set:
+			self.replay_drops += 1
+			return [], self.expected
 	  
     # duplicate detection
 		already_passed = (seq - self.expected) % MAX_SEQ > MAX_SEQ // 2
@@ -65,13 +73,14 @@ class ReceiverACKTracker:
 		if seq == self.expected:
 			delivered = [payload]
 			self.expected = (self.expected + 1) % MAX_SEQ
+			self.received_set.add(seq) # delivered
 			
 			delivered.extend(self._drain_buffer())
 			self._since_ack += len(delivered)
 		else:
 			# out of order packet
 			if seq not in self.ooo_buffer:
-					self.ooo_buffer[seq] = payload
+				self.ooo_buffer[seq] = payload
 			delivered = []
 			self._since_ack += 1
 
@@ -98,3 +107,7 @@ def _drain_buffer(self) -> list[bytes]:
 		drained.append(self.ooo_buffer.pop(self.expected))
 		self.expected = (self.expected + 1) % MAX_SEQ
 	return drained
+
+# generate nonce
+def generate_nonce(seq: int, session_id: bytes) -> bytes:
+		return session_id[:8] + struct.pack("!I", seq % MAX_SEQ)
