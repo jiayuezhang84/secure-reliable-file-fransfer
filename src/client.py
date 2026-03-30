@@ -9,6 +9,7 @@ from src.core.udp import build_udp_header, parse_udp_header, UDP_SRC, UDP_DST
 from src.core.packet import (
     pack_packet,
     unpack_packet,
+    unpack_secure_packet,
     TYPE_REQ,
     TYPE_DATA,
     TYPE_ACK,
@@ -19,6 +20,8 @@ from src.core.packet import (
     SEQ,
     TYPE
 )
+
+from src.core.checksum_utils import decrypt_packet, build_add
 
 # security imports
 from src.core.security import (
@@ -176,8 +179,32 @@ class SRFTClient:
 
             # NORMAL FLOW
             if header[TYPE] == TYPE_DATA:
-                self.handle_data(header[SEQ], payload)
+                if self.handshake_done:
+                    try:
+                        secure_header, session_id, nonce, ciphertext = unpack_secure_packet(
+                            packet[content_start_index:]
+                        )
+                    except ValueError:
+                        continue
 
+                    if session_id != self.session_id:
+                        continue
+
+                    aad = build_add(session_id, secure_header[SEQ], 0, 0)
+
+                    plaintext = decrypt_packet(
+                        ciphertext,
+                        self.enc_key,
+                        nonce,
+                        aad
+                    )
+
+                    if plaintext is None:
+                        continue
+
+                    self.handle_data(secure_header[SEQ], plaintext)
+                else:
+                    self.handle_data(header[SEQ], payload)
             elif header[TYPE] == TYPE_FIN:
                 transfer_complete = False
 
