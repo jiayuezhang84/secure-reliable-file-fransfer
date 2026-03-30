@@ -1,7 +1,5 @@
 # Open raw socket + send packets
 import socket
-
-import socket
 import threading
 import time
 import os
@@ -17,12 +15,21 @@ from src.core.packet import (
     TYPE_ACK,
     TYPE_FIN,
     TYPE_ERR,
+    TYPE_HELLO_CLIENT,
+    TYPE_HELLO_SERVER,
     SEQ,
     TYPE,
     PAYLOAD,
     SENT_AT,
     ACK
 )
+from src.core.security import (
+    load_psk,
+    handle_client_hello,
+    build_server_hello,
+    derive_keys
+)
+
 EMPTY_BYTES = b""
 
 
@@ -42,7 +49,7 @@ class SRFTServer:
         self.send_socket = init_send_socket()
 
         self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_UDP)
-                
+
         """ binding receive socket at server to server IP, with a timeout """
         self.recv_socket.bind((self.server_ip, 0))
         self.recv_socket.settimeout(RECEIVE_TIMEOUT)
@@ -52,12 +59,12 @@ class SRFTServer:
         self.next_seq = 0
         self.unacked = {}
 
-        # for large file transfer: multi threading 
+        # for large file transfer: multi threading
         self.lock = threading.Lock()
         self.file_chunks = []
         self.fin_sent = False
         self.transmission_active = False
-        """ transmission_id is unique identifier / counter for identifying current file transfer session """ 
+        """ transmission_id is unique identifier / counter for identifying current file transfer session """
         self.transmission_id = 0
         self.retransmission_thread = None
 
@@ -70,19 +77,30 @@ class SRFTServer:
 
         self.running = True
 
+        # PHASE 2 SECURITY STATE
+        self.psk = load_psk()
+
+        self.client_nonce = None
+        self.server_nonce = None
+        self.session_id = None
+
+        self.enc_key = None
+        self.ack_key = None
+
+        self.handshake_done = False
+
     # Raw packet send
     def send_udp_packet(self, dst_ip, src_port, dst_port, payload):
-
         udp_header = build_udp_header(src_port, dst_port, payload, self.server_ip, dst_ip)
         ip_header = build_ipv4_header(self.server_ip, dst_ip, IPV4_HEADER_LEN + len(udp_header) + len(payload))
 
         packet = ip_header + udp_header + payload
-
         self.send_socket.sendto(packet, (dst_ip, 0))
 
         self.packets_sent += 1
 
-    """ this function sends packet from server to client, and adds entry into unacked buffer
+    """
+    this function sends packet from server to client, and adds entry into unacked buffer
     using sequence number as key to track sent packets which have not been acked by client.
     since it updates unacked shared buffer, this function should always be called from code
     holding lock to avoid race conditions.
@@ -95,8 +113,9 @@ class SRFTServer:
             SENT_AT: time.time(),
             TYPE: msg_type,
         }
-    
-    """ this function sends as many new data packets allowed using sliding window constraint, and 
+
+    """
+    this function sends as many new data packets allowed using sliding window constraint, and
     sends FIN packet only after all the data is sent to client and acknowledged by client,
     since it calls send_packet_and_track_ack and sets next_seq this function should always be called from code
     holding lock to avoid race conditions.
@@ -115,7 +134,8 @@ class SRFTServer:
             self.fin_sent = True
             self.next_seq += 1
 
-    """ reset the server state variables after transfers compelete, updates shared state variables, 
+    """
+    reset the server state variables after transfers complete, updates shared state variables,
     must be called after holding lock
     """
     def reset_transfer_variables(self):
@@ -136,23 +156,22 @@ class SRFTServer:
             self.send_udp_packet(client_ip, self.server_port, client_port, err_packet)
             return
 
-        """ need to error out when the request file is not found, use name to check this  """
+        """ need to error out when the requested file is not found """
         if not os.path.isfile(filename):
             err_packet = pack_packet(TYPE_ERR, 0, 0, f"File not found: {filename}".encode())
             self.send_udp_packet(client_ip, self.server_port, client_port, err_packet)
             return
 
-        """ chunkify the file, and each chunk would be sent as a packet payload """
+        """ chunkify the file, and each chunk will be sent as a packet payload """
         file_chunks = []
         with open(filename, "rb") as file_obj:
             while True:
                 chunk = file_obj.read(self.chunk_size)
                 if chunk == EMPTY_BYTES:
-                    """ stop condition when no more bytes to chunk """
                     break
                 file_chunks.append(chunk)
 
-        """ set server state variables, need to acquire lock to update shared variables  """
+        """ set server state variables """
         with self.lock:
             self.transmission_active = True
             self.transmission_id += 1
@@ -165,10 +184,9 @@ class SRFTServer:
             self.fin_sent = False
 
             current_transmission_id = self.transmission_id
-            
+
             """ actually fill and send packet payload/chunks for the first time """
             self.send_sliding_window()
-
 
         """ init the background thread to check for and trigger retransmission """
         self.retransmission_thread = threading.Thread(
@@ -181,17 +199,10 @@ class SRFTServer:
     # Retransmission: guarantee safe transfer
     def check_retransmission(self, transmission_id):
         while self.running:
-            """ sleep before trying retransmission """
             time.sleep(self.rto)
 
-
-            """ need to iterate over all unacknowledged packets and determine which have timed out
-            and need to be resent """
             timed_out = []
-            """ need to acquire lock before reading transmission_id and unacked """
             with self.lock:
-                """ transmission id has to be the currently active transmission id and transfer has to be active for this 
-                transmission to continue """
                 if transmission_id != self.transmission_id or not self.transmission_active:
                     return
 
@@ -199,15 +210,11 @@ class SRFTServer:
                 client_ip = self.client_ip
                 client_port = self.client_port
 
-
-                """ find all unacknowledged packets which have timed out """
                 for seq, packet_data in self.unacked.items():
                     if now - packet_data[SENT_AT] >= self.rto:
                         packet_data[SENT_AT] = now
                         timed_out.append((seq, packet_data[PAYLOAD], packet_data[TYPE]))
 
-
-            """ iterate through all the timed out packets which are unacked, and resend them """
             for seq, payload, msg_type in timed_out:
                 self.send_udp_packet(client_ip, self.server_port, client_port, payload)
                 self.retransmissions += 1
@@ -216,45 +223,33 @@ class SRFTServer:
 
     # ACK processing
     def process_ack(self, ack):
-
-        """ acquire lock before reading/writing unacked map and transmission_active """
         with self.lock:
-
-            """ only need to process acks when there is active transmission """
             if not self.transmission_active:
                 return
 
-            """ only accept acks that are not too old(<=base) and not in the future (>next_seq) """
             if ack <= self.base or ack > self.next_seq:
                 return
 
-            """ remove all packets that were 'unacked' but less than the cumulative ack number """
             for seq in sorted(list(self.unacked)):
                 if seq < ack:
                     self.unacked.pop(seq)
 
-            """ update base to cumulative ack """
             self.base = ack
-            """ fill window with more data packets """
             self.send_sliding_window()
 
-            """ if FIN send and all acked, then we can finish the transfer, and reset server for doing the next transfer """
             if self.fin_sent and ack >= self.next_seq and not self.unacked:
                 self.reset_transfer_variables()
 
     # Receive loop
     def receive_loop(self):
-        """ run while server is running """
         while self.running:
             try:
                 packet, _ = self.recv_socket.recvfrom(65535)
             except socket.timeout:
-                """ just keep listening if socket timed out trying to receive a message """
                 continue
 
             print(f"[SERVER][DEBUG] raw packet len={len(packet)}")
 
-            """ unpack the ip and udp data, and get the offset where SRFT payload content starts """
             try:
                 ip_header_data, ip_header_len = parse_ipv4_header(packet)
                 udp_header_data, content_start_index = parse_udp_header(packet, ip_header_len)
@@ -262,36 +257,74 @@ class SRFTServer:
                 print(f"[SERVER][DEBUG] dropped before SRFT parse: {exc}")
                 continue
 
-            """ early exit further processing for packets not coming to intended dst """
             if ip_header_data[IP_DST] != self.server_ip:
                 continue
             if udp_header_data[UDP_DST] != self.server_port:
                 continue
 
-
-            """ parse the SRFT data """
             try:
                 header, payload = unpack_packet(packet[content_start_index:])
             except ValueError as exc:
                 print(f"[SERVER][DEBUG] dropped SRFT packet: {exc}")
                 continue
 
-            """ parse the SRFT data """
+            # HANDLE CLIENT HELLO
+            if header[TYPE] == TYPE_HELLO_CLIENT:
+                self.packets_from_client += 1
+
+                ok, client_nonce = handle_client_hello(self.psk, payload)
+                if not ok:
+                    print("[SERVER] Handshake failed: bad ClientHello")
+                    continue
+
+                self.client_nonce = client_nonce
+                self.server_nonce, self.session_id, hello_reply_payload = build_server_hello(
+                    self.psk,
+                    self.client_nonce
+                )
+
+                hello_reply_packet = pack_packet(TYPE_HELLO_SERVER, 0, 0, hello_reply_payload)
+                self.send_udp_packet(
+                    ip_header_data[IP_SRC],
+                    self.server_port,
+                    udp_header_data[UDP_SRC],
+                    hello_reply_packet
+                )
+
+                self.enc_key, self.ack_key = derive_keys(
+                    self.psk,
+                    self.client_nonce,
+                    self.server_nonce
+                )
+
+                self.client_ip = ip_header_data[IP_SRC]
+                self.client_port = udp_header_data[UDP_SRC]
+                self.handshake_done = True
+
+                print("[SERVER] Handshake complete")
+                continue
+
             if header[TYPE] == TYPE_REQ:
                 self.packets_from_client += 1
+
+                if not self.handshake_done:
+                    print("[SERVER][DEBUG] ignored REQ before handshake")
+                    continue
+
                 filename = payload.decode().strip()
                 print(f"[SERVER][DEBUG] accepted REQ for {filename!r}")
-                self.handle_request(ip_header_data["src"], udp_header_data[UDP_SRC], filename)
+                self.handle_request(ip_header_data[IP_SRC], udp_header_data[UDP_SRC], filename)
+
             elif header[TYPE] == TYPE_ACK:
                 if ip_header_data[IP_SRC] != self.client_ip or udp_header_data[UDP_SRC] != self.client_port:
                     print(
                         "[SERVER][DEBUG] ignored ACK from unexpected peer "
-                        f"{ip_header_data['src']}:{udp_header_data['src_port']}"
+                        f"{ip_header_data[IP_SRC]}:{udp_header_data[UDP_SRC]}"
                     )
                     continue
 
                 self.packets_from_client += 1
-                print(f"[SERVER][DEBUG] accepted ACK {header['ack']}")
+                print(f"[SERVER][DEBUG] accepted ACK {header[ACK]}")
                 self.process_ack(header[ACK])
 
     # Start
