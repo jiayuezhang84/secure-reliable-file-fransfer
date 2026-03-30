@@ -21,8 +21,10 @@ from src.core.packet import (
     TYPE,
     PAYLOAD,
     SENT_AT,
-    ACK
+    ACK,
+    pack_secure_packet
 )
+from src.core.checksum_utils import encrypt_packet, build_add
 from src.core.security import (
     load_psk,
     handle_client_hello,
@@ -106,8 +108,31 @@ class SRFTServer:
     holding lock to avoid race conditions.
     """
     def send_packet_and_track_ack(self, msg_type, seq, payload):
-        packet = pack_packet(msg_type, seq, 0, payload)
+        if self.handshake_done:
+            nonce = os.urandom(12)
+
+            aad = build_add(self.session_id, seq, 0, 0)
+
+            ciphertext = encrypt_packet(
+                payload,
+                self.enc_key,
+                nonce,
+                aad
+            )
+
+            packet = pack_secure_packet(
+                msg_type,
+                seq,
+                0,
+                self.session_id,
+                nonce,
+                ciphertext
+            )
+        else:
+            packet = pack_packet(msg_type, seq, 0, payload)
+
         self.send_udp_packet(self.client_ip, self.server_port, self.client_port, packet)
+
         self.unacked[seq] = {
             PAYLOAD: packet,
             SENT_AT: time.time(),
