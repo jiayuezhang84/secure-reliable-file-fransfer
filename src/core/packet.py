@@ -136,7 +136,7 @@ def unpack_secure_payload(payload: bytes) -> tuple[bytes, bytes, bytes]:
 def pack_secure_packet(msg_type: int, seq: int, ack: int,
                        session_id: bytes, nonce: bytes, ciphertext: bytes,
                        window: int = 0, flags: int = 0) -> bytes:
-    payload = pack_secure_packet(session_id, nonce, ciphertext)
+    payload = pack_secure_payload(session_id, nonce, ciphertext)
     return pack_packet(msg_type, seq, ack, payload, window, flags)
 
 def unpack_secure_packet(packet: bytes) -> tuple[dict, bytes, bytes, bytes]:
