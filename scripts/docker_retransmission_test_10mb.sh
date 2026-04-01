@@ -3,8 +3,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-CLIENT="hostA-10.0.1.10"
-SERVER="hostB-10.0.1.20"
+CLIENT_SERVICE="hostA"
+SERVER_SERVICE="hostB"
 WORKDIR="/root/srft"
 SOURCE_NAME="test_10mb_file"
 DOWNLOAD_URL="https://drive.usercontent.google.com/download?id=1dSVOBCC6KcLRemG64TTNXMKG1oe9gIjR&export=download&confirm=t"
@@ -17,6 +17,10 @@ OUTPUT_NAME="received_${SOURCE_NAME}"
 SERVER_LOG="$TEMP_DIR/server.log"
 CLIENT_LOG="$TEMP_DIR/client.log"
 SUMMARY_LOG="$PWD/retransmission_test_10mb.log"
+
+resolve_container() {
+  docker compose ps -q "$1" | head -n 1
+}
 
 cleanup() {
   if [ -n "${CLIENT_PID:-}" ] && kill -0 "$CLIENT_PID" 2>/dev/null; then
@@ -38,6 +42,14 @@ trap cleanup EXIT
 
 echo "Ensuring Docker containers are up"
 docker compose up -d >/dev/null
+
+CLIENT="$(resolve_container "$CLIENT_SERVICE")"
+SERVER="$(resolve_container "$SERVER_SERVICE")"
+
+if [ -z "$CLIENT" ] || [ -z "$SERVER" ]; then
+  echo "Failed to resolve Docker Compose services" >&2
+  exit 1
+fi
 
 echo "Downloading 10 MB test file"
 curl -fsSL -o "$SOURCE_PATH" "$DOWNLOAD_URL"

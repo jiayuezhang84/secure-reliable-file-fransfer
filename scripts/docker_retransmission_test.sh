@@ -7,13 +7,25 @@ FILENAME="${1:-README.md}"
 CONFIG="${2:-config_retransmission.json}"
 TIMEOUT="${3:-20}"
 
-CLIENT="hostA-10.0.1.10"
-SERVER="hostB-10.0.1.20"
+CLIENT_SERVICE="hostA"
+SERVER_SERVICE="hostB"
 WORKDIR="/root/srft"
 OUTFILE="received_$(basename "$FILENAME")"
 
 SERVER_LOG="/tmp/srft_server.log"
 CLIENT_LOG="/tmp/srft_client.log"
+
+resolve_container() {
+  docker compose ps -q "$1" | head -n 1
+}
+
+CLIENT="$(resolve_container "$CLIENT_SERVICE")"
+SERVER="$(resolve_container "$SERVER_SERVICE")"
+
+if [ -z "$CLIENT" ] || [ -z "$SERVER" ]; then
+  echo "Docker Compose services are not running. Start them with 'docker compose up -d' first." >&2
+  exit 1
+fi
 
 cleanup() {
   if [ -n "${CLIENT_PID:-}" ] && kill -0 "$CLIENT_PID" 2>/dev/null; then

@@ -6,13 +6,12 @@
     "server_port": 50000
   },
   "transfer": {
-    "chunk_size": 1200,
-    "send_window_packets": 64
+    "chunk_size": 1400,
+    "send_window_packets": 256
   },
   "timers": {
-    "rto_ms": 300,
-    "ack_interval_ms": 50
+    "rto_ms": 500,
+    "ack_interval_ms": 10
   },
-  "security": {
-  }
+  "security": {}
 }

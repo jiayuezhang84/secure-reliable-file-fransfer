@@ -1,26 +1,28 @@
 services:
+  # client
   hostA:
     image: handsonsecurity/seed-ubuntu:large-arm
-    container_name: hostA-10.0.1.10
+    container_name: hostA-172.31.64.201
     tty: true
     cap_add:
       - ALL
     privileged: true
     networks:
       srft-net:
-        ipv4_address: 10.0.1.10
+        ipv4_address: 172.31.64.201
     command: ["bash", "-c", "/etc/init.d/openbsd-inetd start && tail -f /dev/null"]
 
+  # server
   hostB:
     image: handsonsecurity/seed-ubuntu:large-arm
-    container_name: hostB-10.0.1.20
+    container_name: hostB-172.31.77.14
     tty: true
     cap_add:
       - ALL
     privileged: true
     networks:
       srft-net:
-        ipv4_address: 10.0.1.20
+        ipv4_address: 172.31.77.14
     command: ["bash", "-c", "/etc/init.d/openbsd-inetd start && tail -f /dev/null"]
 
 networks:
@@ -28,4 +30,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.1.0/24
+        - subnet: 172.31.0.0/16
