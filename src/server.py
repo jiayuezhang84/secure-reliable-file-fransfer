@@ -46,7 +46,7 @@ def compute_sha256(path: str) -> bytes:
 
 
 class SRFTServer:
-    def __init__(self, cfg):
+    def __init__(self, cfg, attack_mode=None):
         self.cfg = cfg
 
         self.server_ip = cfg.network.server_ip
@@ -103,6 +103,103 @@ class SRFTServer:
 
         self.seen_acks = set()
 
+        # For the transfer report file
+        self.current_filename = None   # name of the file being transferred
+        self.file_size_bytes  = 0      # size of the file in bytes
+        self.transfer_start_time = None  # when the transfer started
+
+        # ------------------------------------------------------------------
+        # Attack mode state
+        # attack_mode is None (normal), "tamper", "replay", or "inject"
+        # ------------------------------------------------------------------
+        self.attack_mode = attack_mode
+
+        # For tamper: have we already tampered with the first packet?
+        self._tamper_done = False
+
+        # For replay: store the first DATA packet bytes so we can resend later
+        self._replay_packet = None
+        self._replay_sent = False
+
+        # For inject: have we already injected the garbage packet?
+        self._inject_done = False
+
+        if attack_mode:
+            print(f"[SERVER][ATTACK] Attack mode enabled: --attack {attack_mode}")
+
+    # ------------------------------------------------------------------
+    # Attack helpers
+    # ------------------------------------------------------------------
+
+    def _apply_tamper(self, packet: bytes) -> bytes:
+        """
+        Flip 2 bits inside the encrypted payload portion of the packet.
+        This simulates an attacker modifying data in transit.
+        The client's AES-GCM will fail to decrypt it → AEAD failure.
+        The server will then retransmit the real packet → transfer recovers.
+
+        We target a byte near the end of the packet to avoid hitting
+        the SRFT header (which has its own checksum that would drop it
+        before even reaching the AEAD check).
+        """
+        if len(packet) < 60:
+            # Packet too small to safely tamper with, skip
+            return packet
+
+        packet_as_list = bytearray(packet)
+
+        # Flip bits in two bytes near the end of the ciphertext
+        target1 = len(packet_as_list) - 5
+        target2 = len(packet_as_list) - 10
+
+        packet_as_list[target1] ^= 0b00000011  # flip last 2 bits of this byte
+        packet_as_list[target2] ^= 0b11000000  # flip first 2 bits of this byte
+
+        print(f"[SERVER][ATTACK] tamper: flipped bits at bytes {target1} and {target2}")
+        return bytes(packet_as_list)
+
+    def _send_inject(self):
+        """
+        Send a completely random garbage packet to the client.
+        This simulates an attacker injecting forged packets.
+        The client's AES-GCM will reject it → AEAD failure increments.
+        """
+        # Build a random payload that looks like it could be a packet
+        # but has no valid AEAD tag — the client will drop it immediately
+        garbage = os.urandom(200)
+        print("[SERVER][ATTACK] inject: sending random garbage packet to client")
+        self.send_udp_packet(
+            self.client_ip,
+            self.server_port,
+            self.client_port,
+            garbage
+        )
+
+    def _schedule_replay(self, packet: bytes):
+        """
+        After a short delay, resend an old valid DATA packet.
+        This simulates a replay attack — sending a previously captured packet.
+        The client has already seen this seq number → replay drop increments.
+        """
+        def _do_replay():
+            # Wait until the transfer is likely done, then replay the old packet
+            time.sleep(3.0)
+            if self.client_ip and self.client_port:
+                print("[SERVER][ATTACK] replay: resending captured DATA packet")
+                self.send_udp_packet(
+                    self.client_ip,
+                    self.server_port,
+                    self.client_port,
+                    packet
+                )
+
+        replay_thread = threading.Thread(target=_do_replay, daemon=True)
+        replay_thread.start()
+
+    # ------------------------------------------------------------------
+    # Core send functions
+    # ------------------------------------------------------------------
+
     def send_udp_packet(self, dst_ip, src_port, dst_port, payload):
         udp_header = build_udp_header(src_port, dst_port, payload, self.server_ip, dst_ip)
         ip_header = build_ipv4_header(
@@ -138,6 +235,36 @@ class SRFTServer:
             )
         else:
             packet = pack_packet(msg_type, seq, 0, payload)
+
+        # ------------------------------------------------------------------
+        # Attack mode hooks — only trigger on DATA packets, only once each
+        # ------------------------------------------------------------------
+        if msg_type == TYPE_DATA:
+
+            # TAMPER: corrupt the first DATA packet before sending
+            if self.attack_mode == "tamper" and not self._tamper_done:
+                packet = self._apply_tamper(packet)
+                self._tamper_done = True
+
+            # REPLAY: save the first DATA packet to resend later
+            if self.attack_mode == "replay" and self._replay_packet is None:
+                self._replay_packet = packet
+                print(f"[SERVER][ATTACK] replay: captured DATA seq={seq} for later replay")
+                # Schedule the replay to fire after transfer completes
+                self._schedule_replay(packet)
+
+            # INJECT: send a garbage packet right after the first real packet
+            if self.attack_mode == "inject" and not self._inject_done:
+                self._inject_done = True
+                # Send the real packet first, then inject garbage right after
+                self.send_udp_packet(self.client_ip, self.server_port, self.client_port, packet)
+                self.unacked[seq] = {
+                    PAYLOAD: packet,
+                    SENT_AT: time.time(),
+                    TYPE: msg_type,
+                }
+                self._send_inject()
+                return  # already tracked, skip the normal send below
 
         self.send_udp_packet(self.client_ip, self.server_port, self.client_port, packet)
 
@@ -206,6 +333,9 @@ class SRFTServer:
             self.file_chunks = file_chunks
             self.fin_sent = False
             self.original_digest = compute_sha256(filename)
+            self.current_filename    = filename
+            self.file_size_bytes     = os.path.getsize(filename)
+            self.transfer_start_time = time.time()
 
             current_transmission_id = self.transmission_id
             self.send_sliding_window()
@@ -379,17 +509,66 @@ class SRFTServer:
                     print(f"[SERVER][DEBUG] accepted ACK {header[ACK]}")
                     self.process_ack(header[ACK])
 
+    def write_report(self, duration_seconds: float):
+        """
+        Write the required transfer report to a .txt file on disk.
+        The spec requires this file — it is proof of each test run.
+
+        Format matches exactly what the project description asks for.
+        The file is saved as transfer_report.txt in the working directory.
+        """
+        # Format duration as hh:mm:ss
+        hours   = int(duration_seconds // 3600)
+        minutes = int((duration_seconds % 3600) // 60)
+        seconds = int(duration_seconds % 60)
+        duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+        filename     = self.current_filename or "N/A"
+        size_bytes   = self.file_size_bytes or 0
+        size_str     = f"{size_bytes} bytes ({size_bytes / 1024:.2f} KB)"
+
+        lines = [
+            "=" * 50,
+            "SRFT Transfer Report",
+            "=" * 50,
+            f"Name of the transferred file:                           {filename}",
+            f"Size of the transferred file:                           {size_str}",
+            f"The number of packets sent from the server:             {self.packets_sent}",
+            f"The number of retransmitted packets from the server:    {self.retransmissions}",
+            f"The number of packets received from the client:         {self.packets_from_client}",
+            f"The time duration of the file transfer (hh:mm:ss):      {duration_str}",
+            f"Security enabled (PSK + AEAD):                          {'Yes' if self.security_enabled else 'No'}",
+            f"Handshake status:                                        {'Success' if self.handshake_done else 'Fail'}",
+            f"AEAD authentication failures (invalid packets dropped): {self.aead_failures}",
+            f"Replay drops (duplicate/out-of-window packets):         {self.replay_drops}",
+            f"SHA-256 match:                                           {'Yes' if self.sha256_match else 'No'}",
+            "=" * 50,
+        ]
+
+        report_text = "\n".join(lines)
+
+        # Print to terminal as before
+        print("\n" + report_text)
+
+        # Also save to disk — this is the file the spec asks for
+        report_path = "transfer_report.txt"
+        with open(report_path, "w") as f:
+            f.write(report_text + "\n")
+
+        print(f"[SERVER] Report saved to {report_path}")
+
     def start(self):
         print(f"[SERVER] Listening on {self.server_ip}:{self.server_port}")
+        if self.attack_mode:
+            print(f"[SERVER] *** ATTACK MODE: {self.attack_mode} ***")
+
+        start_time = time.time()
         self.receive_loop()
+        end_time = time.time()
 
-        print(f"[SERVER] Security enabled (PSK + AEAD): {'Yes' if self.security_enabled else 'No'}")
-        print(f"[SERVER] Handshake status: {'Success' if self.handshake_done else 'Fail'}")
-        print(f"[SERVER] AEAD authentication failures (invalid packets dropped): {self.aead_failures}")
-        print(f"[SERVER] Replay drops (duplicate/out-of-window packets): {self.replay_drops}")
-        print(f"[SERVER] SHA-256 match: {'Yes' if self.sha256_match else 'No'}")
+        self.write_report(duration_seconds=end_time - start_time)
 
 
-def run_server(cfg):
-    server = SRFTServer(cfg)
+def run_server(cfg, attack_mode=None):
+    server = SRFTServer(cfg, attack_mode=attack_mode)
     server.start()
