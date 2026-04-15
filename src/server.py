@@ -133,29 +133,51 @@ class SRFTServer:
 
     def _apply_tamper(self, packet: bytes) -> bytes:
         """
-        Flip 2 bits inside the encrypted payload portion of the packet.
-        This simulates an attacker modifying data in transit.
-        The client's AES-GCM will fail to decrypt it → AEAD failure.
-        The server will then retransmit the real packet → transfer recovers.
+        Flip 2 bits inside the CIPHERTEXT portion of the packet.
+        The packet layout (SRFT payload only, no IP/UDP headers here) is:
+          - SRFT header : 24 bytes
+          - session_id  :  8 bytes
+          - nonce       : 12 bytes
+          - ciphertext  : remaining bytes  <-- we corrupt here
 
-        We target a byte near the end of the packet to avoid hitting
-        the SRFT header (which has its own checksum that would drop it
-        before even reaching the AEAD check).
+        We recalculate the SRFT checksum after tampering so the packet
+        passes the outer checksum check and reaches AES-GCM decryption,
+        where it will fail and increment aead_failures.
         """
-        if len(packet) < 60:
-            # Packet too small to safely tamper with, skip
+        from src.core.packet import checksum16, HEADER_FORMAT
+        import struct
+
+        SRFT_HEADER_LEN = 24
+        SESSION_ID_LEN  = 8
+        NONCE_LEN       = 12
+        CIPHERTEXT_START = SRFT_HEADER_LEN + SESSION_ID_LEN + NONCE_LEN  # = 44
+
+        if len(packet) < CIPHERTEXT_START + 10:
             return packet
 
         packet_as_list = bytearray(packet)
 
-        # Flip bits in two bytes near the end of the ciphertext
-        target1 = len(packet_as_list) - 5
-        target2 = len(packet_as_list) - 10
+        # Corrupt two bytes inside the ciphertext
+        target1 = CIPHERTEXT_START + 2
+        target2 = CIPHERTEXT_START + 5
+        packet_as_list[target1] ^= 0b00000011
+        packet_as_list[target2] ^= 0b11000000
 
-        packet_as_list[target1] ^= 0b00000011  # flip last 2 bits of this byte
-        packet_as_list[target2] ^= 0b11000000  # flip first 2 bits of this byte
+        # Recalculate SRFT checksum so outer check still passes
+        fields = struct.unpack(HEADER_FORMAT, bytes(packet_as_list[:SRFT_HEADER_LEN]))
+        magic, version, msg_type, flags, seq, ack, payload_len, window, _, reserved = fields
+        header_no_checksum = struct.pack(
+            HEADER_FORMAT, magic, version, msg_type, flags,
+            seq, ack, payload_len, window, 0, reserved
+        )
+        new_checksum = checksum16(header_no_checksum + bytes(packet_as_list[SRFT_HEADER_LEN:]))
+        fixed_header = struct.pack(
+            HEADER_FORMAT, magic, version, msg_type, flags,
+            seq, ack, payload_len, window, new_checksum, reserved
+        )
+        packet_as_list[:SRFT_HEADER_LEN] = fixed_header
 
-        print(f"[SERVER][ATTACK] tamper: flipped bits at bytes {target1} and {target2}")
+        print(f"[SERVER][ATTACK] tamper: corrupted ciphertext at bytes {target1} and {target2}")
         return bytes(packet_as_list)
 
     def _send_inject(self):
@@ -166,32 +188,40 @@ class SRFTServer:
         """
         # Build a random payload that looks like it could be a packet
         # but has no valid AEAD tag — the client will drop it immediately
-        garbage = os.urandom(200)
-        print("[SERVER][ATTACK] inject: sending random garbage packet to client")
-        self.send_udp_packet(
-            self.client_ip,
-            self.server_port,
-            self.client_port,
-            garbage
-        )
+        fake_nonce      = os.urandom(12)
+        fake_ciphertext = os.urandom(60)
+        forged_packet = pack_secure_packet(
+            TYPE_DATA,
+            seq=99,
+            ack=0,
+            session_id=self.session_id,
+            nonce=fake_nonce,
+            ciphertext=fake_ciphertext
+        )   
 
+        print("[SERVER][ATTACK] inject: sending forged packet with random ciphertext")
+        self.send_udp_packet(self.client_ip, self.server_port, self.client_port, forged_packet)
+       
+        
     def _schedule_replay(self, packet: bytes):
         """
         After a short delay, resend an old valid DATA packet.
         This simulates a replay attack — sending a previously captured packet.
         The client has already seen this seq number → replay drop increments.
         """
+
+        saved_client_ip   = self.client_ip
+        saved_client_port = self.client_port
         def _do_replay():
             # Wait until the transfer is likely done, then replay the old packet
-            time.sleep(3.0)
-            if self.client_ip and self.client_port:
-                print("[SERVER][ATTACK] replay: resending captured DATA packet")
-                self.send_udp_packet(
-                    self.client_ip,
-                    self.server_port,
-                    self.client_port,
-                    packet
-                )
+            time.sleep(0.5)
+            print("[SERVER][ATTACK] replay: resending captured DATA packet")
+            self.send_udp_packet(
+                saved_client_ip,
+                self.server_port,
+                saved_client_port,
+                packet
+            )
 
         replay_thread = threading.Thread(target=_do_replay, daemon=True)
         replay_thread.start()
@@ -243,8 +273,9 @@ class SRFTServer:
 
             # TAMPER: corrupt the first DATA packet before sending
             if self.attack_mode == "tamper" and not self._tamper_done:
-                packet = self._apply_tamper(packet)
                 self._tamper_done = True
+                tampered = self._apply_tamper(packet)
+                self.send_udp_packet(self.client_ip, self.server_port, self.client_port, tampered)
 
             # REPLAY: save the first DATA packet to resend later
             if self.attack_mode == "replay" and self._replay_packet is None:

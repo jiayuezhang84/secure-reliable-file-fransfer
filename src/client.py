@@ -296,7 +296,10 @@ class SRFTClient:
 
                 if transfer_complete and self.sha256_match:
                     self.finished = True
-                    self.running = False
+                    def stop_after_delay():
+                        time.sleep(2.0)
+                        self.running = False
+                    threading.Thread(target=stop_after_delay, daemon=True).start()
                 elif not self.sha256_match:
                     self.server_error = "SHA-256 mismatch"
                     self.running = False
@@ -357,6 +360,8 @@ class SRFTClient:
 
         while self.running:
             time.sleep(0.1)
+        
+        time.sleep(2.0)  # wait for delayed attack packets
 
         self.output_fp.close()
 
