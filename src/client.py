@@ -4,6 +4,7 @@ import threading
 import time
 import hashlib
 
+from config import get_psk
 from src.core.ip import IPV4_HEADER_LEN, RECEIVE_TIMEOUT, IP_SRC, IP_DST
 from src.core.ip import build_ipv4_header, init_send_socket, parse_ipv4_header
 from src.core.udp import build_udp_header, parse_udp_header, UDP_SRC, UDP_DST
@@ -30,8 +31,7 @@ from src.core.checksum_utils import decrypt_packet, encrypt_packet, build_add
 from src.core.security import (
     build_client_hello,
     handle_server_hello,
-    derive_keys,
-    load_psk
+    derive_keys
 )
 
 
@@ -57,7 +57,9 @@ class SRFTClient:
         self.ack_interval = cfg.timers.ack_interval_ms / 1000
 
         self.security_enabled = getattr(cfg.security, "enabled", False)
-        self.psk = load_psk() if self.security_enabled else b""
+        self.psk = b""
+        if self.security_enabled:
+            self.psk = get_psk(cfg)
 
         # raw sockets
         self.send_socket = init_send_socket()

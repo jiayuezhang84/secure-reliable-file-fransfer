@@ -14,28 +14,6 @@ KEY_SIZE = 32
 HMAC_SIZE = 32
 
 
-def load_psk(config_path: str = "config.json") -> bytes:
-    """
-    Load the PSK from config.json.
-    Expected config format:
-    {
-      "security": {
-        "enabled": true,
-        "psk": "..."
-      }
-    }
-    """
-    with open(config_path, "r") as f:
-        cfg = json.load(f)
-
-    psk = cfg["security"]["psk"]
-
-    if isinstance(psk, str):
-        return psk.encode()
-
-    return bytes(psk)
-
-
 def _make_hmac(psk: bytes, data: bytes) -> bytes:
     """Compute HMAC-SHA256."""
     return hmac.new(psk, data, hashlib.sha256).digest()

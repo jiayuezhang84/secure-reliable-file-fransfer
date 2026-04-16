@@ -4,6 +4,7 @@ import time
 import os
 import hashlib
 
+from config import get_psk
 from src.core.ip import IPV4_HEADER_LEN, RECEIVE_TIMEOUT, IP_SRC, IP_DST
 from src.core.ip import init_send_socket, build_ipv4_header, parse_ipv4_header
 from src.core.udp import build_udp_header, parse_udp_header, UDP_SRC, UDP_DST
@@ -28,7 +29,6 @@ from src.core.packet import (
 )
 from src.core.checksum_utils import encrypt_packet, decrypt_packet, build_add
 from src.core.security import (
-    load_psk,
     handle_client_hello,
     build_server_hello,
     derive_keys
@@ -58,7 +58,9 @@ class SRFTServer:
         self.rto = cfg.timers.rto_ms / 1000
 
         self.security_enabled = getattr(cfg.security, "enabled", False)
-        self.psk = load_psk() if self.security_enabled else b""
+        self.psk = b""
+        if self.security_enabled:
+            self.psk = get_psk(cfg)
 
         self.send_socket = init_send_socket()
 
