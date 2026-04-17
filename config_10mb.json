@@ -14,5 +14,8 @@
     "ack_interval_ms": 10,
     "handshake_timeout_ms": 3000
   },
-  "security": {}
+  "security": {
+    "enabled": true,
+    "psk": "6cce8bae03f349cc2d0dda4c3bb607dfee82b5920ed9847e367297d2c595502d"
+  }
 }
