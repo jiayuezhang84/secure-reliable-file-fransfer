@@ -58,6 +58,7 @@ class SRFTClient:
         self.handshake_timeout = cfg.timers.handshake_timeout_ms / 1000
 
         self.security_enabled = getattr(cfg.security, "enabled", False)
+        self.verbose_logs_enabled = getattr(cfg.debug, "verbose_logs", False)
         self.psk = b""
         if self.security_enabled:
             self.psk = get_psk(cfg)
@@ -118,6 +119,10 @@ class SRFTClient:
         packet = ip_header + udp_header + payload
         self.send_socket.sendto(packet, (dst_ip, 0))
 
+    def log_verbose(self, message):
+        if self.verbose_logs_enabled:
+            print(message)
+
     def send_client_hello(self):
         self.client_nonce, payload = build_client_hello(self.psk)
         pkt = pack_packet(TYPE_HELLO_CLIENT, 0, 0, payload)
@@ -156,7 +161,7 @@ class SRFTClient:
 
         self.send_udp_packet(self.server_ip, self.client_port, self.server_port, ack_packet)
         self.last_ack_sent = time.time()
-        print(f"[CLIENT] sent ACK {ack_number}")
+        self.log_verbose(f"[CLIENT] sent ACK {ack_number}")
 
     def handle_data(self, received_seq, payload):
         with self.lock:

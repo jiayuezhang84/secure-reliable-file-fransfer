@@ -58,6 +58,7 @@ class SRFTServer:
         self.rto = cfg.timers.rto_ms / 1000
 
         self.security_enabled = getattr(cfg.security, "enabled", False)
+        self.verbose_logs_enabled = getattr(cfg.debug, "verbose_logs", False)
         self.psk = b""
         if self.security_enabled:
             self.psk = get_psk(cfg)
@@ -133,6 +134,10 @@ class SRFTServer:
 
         if attack_mode:
             print(f"[SERVER][ATTACK] Attack mode enabled: --attack {attack_mode}")
+
+    def log_verbose(self, message):
+        if self.verbose_logs_enabled:
+            print(message)
 
     # ------------------------------------------------------------------
     # Attack helpers
@@ -442,7 +447,7 @@ class SRFTServer:
                 self.send_udp_packet(client_ip, self.server_port, client_port, payload)
                 self.retransmissions += 1
                 packet_type = "FIN" if msg_type in (TYPE_FIN, TYPE_FIN_DIGEST) else "DATA"
-                print(f"[SERVER] retransmitted {packet_type} seq {seq}")
+                self.log_verbose(f"[SERVER] retransmitted {packet_type} seq {seq}")
 
     def process_ack(self, ack):
 
@@ -486,14 +491,14 @@ class SRFTServer:
                 """ just keep listening if socket timed out trying to receive a message """
                 continue
 
-            print(f"[SERVER][DEBUG] raw packet len={len(packet)}")
+            self.log_verbose(f"[SERVER][DEBUG] raw packet len={len(packet)}")
 
             """ unpack the ip and udp data, and get the offset where SRFT payload content starts """
             try:
                 ip_header_data, ip_header_len = parse_ipv4_header(packet)
                 udp_header_data, content_start_index = parse_udp_header(packet, ip_header_len)
             except ValueError as exc:
-                print(f"[SERVER][DEBUG] dropped before SRFT parse: {exc}")
+                self.log_verbose(f"[SERVER][DEBUG] dropped before SRFT parse: {exc}")
                 continue
 
             """ early exit further processing for packets not coming to intended dst """
@@ -507,7 +512,7 @@ class SRFTServer:
             try:
                 header, payload = unpack_packet(packet[content_start_index:])
             except ValueError as exc:
-                print(f"[SERVER][DEBUG] dropped SRFT packet: {exc}")
+                self.log_verbose(f"[SERVER][DEBUG] dropped SRFT packet: {exc}")
                 continue
 
             if header[TYPE] == TYPE_HELLO_CLIENT:
@@ -549,7 +554,7 @@ class SRFTServer:
                 self.packets_from_client += 1
 
                 if self.security_enabled and not self.handshake_done:
-                    print("[SERVER][DEBUG] ignored REQ before handshake")
+                    self.log_verbose("[SERVER][DEBUG] ignored REQ before handshake")
                     continue
 
                 filename = payload.decode().strip()
@@ -558,7 +563,7 @@ class SRFTServer:
 
             elif header[TYPE] == TYPE_ACK:
                 if ip_header_data[IP_SRC] != self.client_ip or udp_header_data[UDP_SRC] != self.client_port:
-                    print(
+                    self.log_verbose(
                         "[SERVER][DEBUG] ignored ACK from unexpected peer "
                         f"{ip_header_data[IP_SRC]}:{udp_header_data[UDP_SRC]}"
                     )
@@ -572,7 +577,7 @@ class SRFTServer:
                             packet[content_start_index:]
                         )
                     except ValueError as exc:
-                        print(f"[SERVER][DEBUG] dropped secure ACK: {exc}")
+                        self.log_verbose(f"[SERVER][DEBUG] dropped secure ACK: {exc}")
                         continue
 
                     if session_id != self.session_id:
@@ -591,10 +596,10 @@ class SRFTServer:
                         self.aead_failures += 1
                         continue
 
-                    print(f"[SERVER][DEBUG] accepted secure ACK {secure_header[ACK]}")
+                    self.log_verbose(f"[SERVER][DEBUG] accepted secure ACK {secure_header[ACK]}")
                     self.process_ack(secure_header[ACK])
                 else:
-                    print(f"[SERVER][DEBUG] accepted ACK {header[ACK]}")
+                    self.log_verbose(f"[SERVER][DEBUG] accepted ACK {header[ACK]}")
                     self.process_ack(header[ACK])
 
     def write_report(self, duration_seconds: float):
