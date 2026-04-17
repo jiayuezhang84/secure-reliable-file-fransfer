@@ -1,6 +1,8 @@
 """
 Handle handshakes, session key derivation
 """
+from __future__ import annotations      # fixes python version errors
+
 import os
 import hmac
 import json

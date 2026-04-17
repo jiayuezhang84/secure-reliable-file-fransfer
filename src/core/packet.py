@@ -1,3 +1,5 @@
+from __future__ import annotations  # fixes python version errors
+
 import struct
 
 MAGIC = b"SRFT"

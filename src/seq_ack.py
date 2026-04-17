@@ -1,3 +1,5 @@
+from __future__ import annotations  # fixes python version errors
+
 WINDOW_SIZE = 16    # max un-ACKd packets allowed at once
 CUMACK_INTERVAL = 4 # send 1 ACK for every N packets received
 SEQ_BYTES = 4       # bytes reserved for sequence number field
