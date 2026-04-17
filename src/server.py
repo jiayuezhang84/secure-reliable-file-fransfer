@@ -488,6 +488,7 @@ class SRFTServer:
             if self.fin_sent and ack >= self.next_seq and not self.unacked:
                 self.sha256_match = True
                 self.reset_transfer_variables()
+                self.running = False  # exit receive loop so report prints automatically
 
     # Receive loop
     def receive_loop(self):
@@ -611,7 +612,6 @@ class SRFTServer:
 
     def write_report(self, duration_seconds: float):
         """
-        Write the transfer report matching the required sample format exactly.
         Saved to transfer_report.txt and printed to terminal.
         """
         hours        = int(duration_seconds // 3600)
@@ -636,12 +636,6 @@ class SRFTServer:
             f"Number of packets received from client:   {self.packets_from_client}",
             f"Time duration of the file transfer:       {duration_str}",
             f"Original file MD5:                        {md5_hash}",
-            border,
-            f"Security enabled (PSK + AEAD):            {'Yes' if self.security_enabled else 'No'}",
-            f"Handshake status:                         {'Success' if self.handshake_done else 'Fail'}",
-            f"AEAD authentication failures (invalid packets dropped): {self.aead_failures}",
-            f"Replay drops (duplicate/out-of-window packets):         {self.replay_drops}",
-            f"SHA-256 match:                            {'Yes' if self.sha256_match else 'No'}",
             border,
         ]
 
