@@ -11,7 +11,8 @@
   },
   "timers": {
     "rto_ms": 200,
-    "ack_interval_ms": 1000
+    "ack_interval_ms": 1000,
+    "handshake_timeout_ms": 3000
   },
   "security": {}
 }

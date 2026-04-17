@@ -44,6 +44,7 @@ def load_config(path: str):
     data["transfer"].setdefault("send_window_packets", 64)
     data["timers"].setdefault("rto_ms", 300)
     data["timers"].setdefault("ack_interval_ms", 50)
+    data["timers"].setdefault("handshake_timeout_ms", 3000)
     
     # validate PSK
     if data["security"].get("enabled", False):

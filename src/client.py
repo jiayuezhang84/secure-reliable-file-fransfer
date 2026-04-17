@@ -55,6 +55,7 @@ class SRFTClient:
 
         self.chunk_size = cfg.transfer.chunk_size
         self.ack_interval = cfg.timers.ack_interval_ms / 1000
+        self.handshake_timeout = cfg.timers.handshake_timeout_ms / 1000
 
         self.security_enabled = getattr(cfg.security, "enabled", False)
         self.psk = b""
@@ -387,8 +388,15 @@ class SRFTClient:
         if self.security_enabled:
             self.send_client_hello()
 
+            """ check handshake completed or not """
+            handshake_ttl = time.time() + self.handshake_timeout
             while self.running and not self.handshake_done:
-                time.sleep(0.1)
+                if time.time() >= handshake_ttl:
+                    """ handshake timed out """
+                    self.server_error = "Handshake failed"
+                    self.running = False
+                    break
+                time.sleep(0.1) # gap the check frequency
 
         if self.running:
             self.send_request()
@@ -410,6 +418,9 @@ class SRFTClient:
             print(f"[CLIENT] file saved as {self.output_file}")
         elif self.server_error:
             print(f"[CLIENT] server error: {self.server_error}")
+            """ remove any output file at client if the transfer from server failed """ 
+            if os.path.exists(self.output_file):
+                os.remove(self.output_file)
         else:
             print("[CLIENT] transfer did not complete cleanly")
 
