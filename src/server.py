@@ -78,7 +78,10 @@ class SRFTServer:
 
         # for large file transfer: multi threading 
         self.lock = threading.Lock()
-        self.file_chunks = []
+
+        """ using file handle and eof flag to read file chunks per window """
+        self.file_handle = None
+        self.eof_reached = False
         self.fin_sent = False
         self.transmission_active = False
         """ transmission_id is unique identifier / counter for identifying current file transfer session """ 
@@ -322,6 +325,18 @@ class SRFTServer:
             TYPE: msg_type,
         }
 
+    def _read_next_file_chunk(self):
+        if self.file_handle is None:
+            self.eof_reached = True
+            return None
+
+        chunk = self.file_handle.read(self.chunk_size)
+        if chunk == EMPTY_BYTES:
+            self.eof_reached = True
+            return None
+
+        return chunk
+
     """ this function sends as many new data packets allowed using sliding window constraint, and 
         sends FIN packet only after all the data is sent to client and acknowledged by client,
         since it calls send_packet_and_track_ack and sets next_seq this function should always be called from code
@@ -329,13 +344,17 @@ class SRFTServer:
         """
     def send_sliding_window(self):
         """ send new file chunks until the server's send window is full """
-        while self.next_seq < len(self.file_chunks) and self.next_seq < self.base + self.window_size:
+        while self.transmission_active and not self.eof_reached and self.next_seq < self.base + self.window_size:
+            chunk = self._read_next_file_chunk()
+            if chunk is None:
+                break
+
             seq = self.next_seq
-            self.send_packet_and_track_ack(TYPE_DATA, seq, self.file_chunks[seq])
+            self.send_packet_and_track_ack(TYPE_DATA, seq, chunk)
             self.next_seq += 1
 
         """ stopping condition, once all the data is sent and acked, send the FIN packet """
-        if self.transmission_active and not self.fin_sent and self.next_seq >= len(self.file_chunks) and not self.unacked:
+        if self.transmission_active and self.eof_reached and not self.fin_sent and not self.unacked:
             fin_seq = self.next_seq
 
             if self.security_enabled and self.original_digest is not None:
@@ -353,7 +372,10 @@ class SRFTServer:
         self.base = 0
         self.next_seq = 0
         self.unacked.clear()
-        self.file_chunks = []
+        if self.file_handle is not None:
+            self.file_handle.close()
+            self.file_handle = None
+        self.eof_reached = False
         self.fin_sent = False
         self.transmission_active = False
         self.client_ip = None
@@ -374,15 +396,10 @@ class SRFTServer:
             self.send_udp_packet(client_ip, self.server_port, client_port, err_packet)
             return
 
-        """ chunkify the file, and each chunk would be sent as a packet payload """
-        file_chunks = []
-        with open(filename, "rb") as file_obj:
-            while True:
-                chunk = file_obj.read(self.chunk_size)
-                if chunk == EMPTY_BYTES:
-                    """ stop condition when no more bytes to chunk """
-                    break
-                file_chunks.append(chunk)
+        """ prepare metadata and handle of the file to send  """
+        file_size_bytes = os.path.getsize(filename)
+        original_digest = compute_sha256(filename)
+        file_handle = open(filename, "rb")
 
         """ set server state variables, need to acquire lock to update shared variables  """
         with self.lock:
@@ -393,11 +410,12 @@ class SRFTServer:
             self.unacked.clear()
             self.client_ip = client_ip
             self.client_port = client_port
-            self.file_chunks = file_chunks
+            self.file_handle = file_handle
+            self.eof_reached = False
             self.fin_sent = False
-            self.original_digest = compute_sha256(filename)
-            self.current_filename    = filename
-            self.file_size_bytes     = os.path.getsize(filename)
+            self.original_digest = original_digest
+            self.current_filename = filename
+            self.file_size_bytes = file_size_bytes
             self.transfer_start_time = time.time()
 
             current_transmission_id = self.transmission_id
