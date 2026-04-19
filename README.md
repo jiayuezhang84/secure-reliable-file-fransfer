@@ -15,6 +15,7 @@ A UDP-based file transfer application that combines reliable delivery with stron
 7. [Known Limitations and Errors](#known-limitations-and-errors)
 8. [Lessons Learned](#lessons-learned)
 9. [Possible Future Improvements](#possible-future-improvements)
+10. [Meeting Notes](#meeting-notes)
 
 ---
 
@@ -279,5 +280,10 @@ Replay drops (duplicate/out-of-window packets):         0
 SHA-256 match:                                           Yes
 ==================================================
 ```
+---
+
+## Meeting Notes
+### Link: [Meeting notes and project management tools Google Doc](https://docs.google.com/document/d/1pn3BFcJAlB4Dd3i4K-3ii5pTBZ-inJ_5vCT1wfeDVrU/edit?tab=t.0)
+---
 ## Contributors
 Arunit Baidya, Yun Ma, Kole Agava, Jiayue Zhang
