@@ -51,6 +51,18 @@ def compute_sha256(path: str) -> bytes:
     return h.digest()
 
 
+def compute_md5(path: str) -> str:
+    """
+    Compute MD5 hash of a file, returned as a hex string.
+    Required by the assignment to verify file integrity (md5sum on both sides).
+    """
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 class SRFTServer:
     def __init__(self, cfg, attack_mode=None):
         self.cfg = cfg
@@ -72,7 +84,7 @@ class SRFTServer:
         self.send_socket = init_send_socket()
 
         self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_UDP)
-                
+
         """ binding receive socket at server to server IP, with a timeout """
         self.recv_socket.bind((self.server_ip, 0))
         self.recv_socket.settimeout(RECEIVE_TIMEOUT)
@@ -82,7 +94,7 @@ class SRFTServer:
         self.next_seq = 0
         self.unacked = {}
 
-        # for large file transfer: multi threading 
+        # for large file transfer: multi threading
         self.lock = threading.Lock()
 
         """ using file handle and eof flag to read file chunks per window """
@@ -90,7 +102,7 @@ class SRFTServer:
         self.eof_reached = False
         self.fin_sent = False
         self.transmission_active = False
-        """ transmission_id is unique identifier / counter for identifying current file transfer session """ 
+        """ transmission_id is unique identifier / counter for identifying current file transfer session """
         self.transmission_id = 0
         self.retransmission_thread = None
 
@@ -119,9 +131,10 @@ class SRFTServer:
         self.sha256_match = False
 
         # For the transfer report file
-        self.current_filename = None   # name of the file being transferred
-        self.file_size_bytes  = 0      # size of the file in bytes
-        self.transfer_start_time = None  # when the transfer started
+        self.current_filename    = None   # name of the file being transferred
+        self.file_size_bytes     = 0      # size of the file in bytes
+        self.transfer_start_time = None   # when the transfer started
+        self.original_md5        = None   # MD5 of the original file (for report)
 
         # ------------------------------------------------------------------
         # Attack mode state
@@ -166,9 +179,9 @@ class SRFTServer:
         from src.core.packet import checksum16, HEADER_FORMAT
         import struct
 
-        SRFT_HEADER_LEN = 24
-        SESSION_ID_LEN  = 8
-        NONCE_LEN       = 12
+        SRFT_HEADER_LEN  = 24
+        SESSION_ID_LEN   = 8
+        NONCE_LEN        = 12
         CIPHERTEXT_START = SRFT_HEADER_LEN + SESSION_ID_LEN + NONCE_LEN  # = 44
 
         if len(packet) < CIPHERTEXT_START + 10:
@@ -203,10 +216,10 @@ class SRFTServer:
         """
         Send a completely random garbage packet to the client.
         This simulates an attacker injecting forged packets.
-        The client's AES-GCM will reject it → AEAD failure increments.
+        The client's AES-GCM will reject it -> AEAD failure increments.
         """
         # Build a random payload that looks like it could be a packet
-        # but has no valid AEAD tag — the client will drop it immediately
+        # but has no valid AEAD tag -- the client will drop it immediately
         fake_nonce      = os.urandom(12)
         fake_ciphertext = os.urandom(60)
         forged_packet = pack_secure_packet(
@@ -216,21 +229,20 @@ class SRFTServer:
             session_id=self.session_id,
             nonce=fake_nonce,
             ciphertext=fake_ciphertext
-        )   
+        )
 
         print("[SERVER][ATTACK] inject: sending forged packet with random ciphertext")
         self.send_udp_packet(self.client_ip, self.server_port, self.client_port, forged_packet)
-       
-        
+
     def _schedule_replay(self, packet: bytes):
         """
         After a short delay, resend an old valid DATA packet.
-        This simulates a replay attack — sending a previously captured packet.
-        The client has already seen this seq number → replay drop increments.
+        This simulates a replay attack -- sending a previously captured packet.
+        The client has already seen this seq number -> replay drop increments.
         """
-
         saved_client_ip   = self.client_ip
         saved_client_port = self.client_port
+
         def _do_replay():
             # Wait until the transfer is likely done, then replay the old packet
             time.sleep(0.5)
@@ -291,7 +303,7 @@ class SRFTServer:
             packet = pack_packet(msg_type, seq, 0, payload)
 
         # ------------------------------------------------------------------
-        # Attack mode hooks — only trigger on DATA packets, only once each
+        # Attack mode hooks -- only trigger on DATA packets, only once each
         # ------------------------------------------------------------------
         if msg_type == TYPE_DATA:
 
@@ -394,7 +406,7 @@ class SRFTServer:
         if packet_data is None:
             return None
 
-        """ too little time passed, dont retransmit retranmission """ 
+        """ too little time passed, dont retransmit retranmission """
         if self.rto > time.time() - packet_data[SENT_AT]:
             return None
 
@@ -430,7 +442,7 @@ class SRFTServer:
             if seq > largest_received_seq or seq < oldest_seq_needed_at_client:
                 continue
 
-            
+
             packet_data = self.unacked.get(seq)
             """ if the packet was sent too recently, then we don't want to send it again 
             """
@@ -460,7 +472,7 @@ class SRFTServer:
 
         """ base is oldest unacked seq num at server,
         if client is still waiting for base seq at server """
-    
+
         """ we can remove all seqs that are older than the oldest unacked seq at client,
          because client already has them """
         sorted_unacked = sorted(list(self.unacked))
@@ -496,7 +508,7 @@ class SRFTServer:
             seen_retransmit_seqs.add(seq)
             self._send_retransmission_packet(seq, retransmit_info)
 
-    """ this function sends as many new data packets allowed using sliding window constraint, and 
+    """ this function sends as many new data packets allowed using sliding window constraint, and
         sends FIN packet only after all the data is sent to client and acknowledged by client,
         since it calls send_packet_and_track_ack and sets next_seq this function should always be called from code
         holding lock to avoid race conditions.
@@ -524,7 +536,7 @@ class SRFTServer:
             self.fin_sent = True
             self.next_seq += 1
 
-    """ reset the server state variables after transfers compelete, updates shared state variables, 
+    """ reset the server state variables after transfers compelete, updates shared state variables,
     must be called after holding lock
     """
     def reset_transfer_variables(self):
@@ -571,16 +583,16 @@ class SRFTServer:
             self.file_handle = file_handle
             self.eof_reached = False
             self.fin_sent = False
-            self.original_digest = original_digest
-            self.current_filename = filename
-            self.file_size_bytes = file_size_bytes
+            self.original_digest     = original_digest
+            self.original_md5        = compute_md5(filename)
+            self.current_filename    = filename
+            self.file_size_bytes     = file_size_bytes
             self.transfer_start_time = time.time()
 
             current_transmission_id = self.transmission_id
-            
+
             """ actually fill and send packet payload/chunks for the first time """
             self.send_sliding_window()
-
 
         """ init the background thread to check for and trigger retransmission """
         self.retransmission_thread = threading.Thread(
@@ -595,13 +607,12 @@ class SRFTServer:
             """ sleep before trying retransmission """
             time.sleep(self.rto)
 
-
             """ need to iterate over all unacknowledged packets and determine which have timed out
             and need to be resent """
             retransmissions = []
             """ need to acquire lock before reading transmission_id and unacked """
             with self.lock:
-                """ transmission id has to be the currently active transmission id and transfer has to be active for this 
+                """ transmission id has to be the currently active transmission id and transfer has to be active for this
                 transmission to continue """
                 if transmission_id != self.transmission_id or not self.transmission_active:
                     return
@@ -654,7 +665,6 @@ class SRFTServer:
                 continue
             if udp_header_data[UDP_DST] != self.server_port:
                 continue
-
 
             """ parse the SRFT data """
             try:
@@ -752,50 +762,39 @@ class SRFTServer:
 
     def write_report(self, duration_seconds: float):
         """
-        Write the required transfer report to a .txt file on disk.
-        The spec requires this file — it is proof of each test run.
-
-        Format matches exactly what the project description asks for.
-        The file is saved as transfer_report.txt in the working directory.
+        Saved to transfer_report.txt and printed to terminal.
         """
-        # Format duration as hh:mm:ss
-        hours   = int(duration_seconds // 3600)
-        minutes = int((duration_seconds % 3600) // 60)
-        seconds = int(duration_seconds % 60)
+        hours        = int(duration_seconds // 3600)
+        minutes      = int((duration_seconds % 3600) // 60)
+        seconds      = int(duration_seconds % 60)
         duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-        filename     = self.current_filename or "N/A"
-        size_bytes   = self.file_size_bytes or 0
-        size_str     = f"{size_bytes} bytes ({size_bytes / 1024:.2f} KB)"
+        filename   = self.current_filename or "N/A"
+        size_bytes = self.file_size_bytes or 0
+        md5_hash   = self.original_md5 or "N/A"
+
+        border = "=" * 50
 
         lines = [
-            "=" * 50,
-            "SRFT Transfer Report",
-            "=" * 50,
-            f"Name of the transferred file:                           {filename}",
-            f"Size of the transferred file:                           {size_str}",
-            f"The number of packets sent from the server:             {self.packets_sent}",
-            f"The number of retransmitted packets from the server:    {self.retransmissions}",
-            f"The number of packets received from the client:         {self.packets_from_client}",
-            f"The time duration of the file transfer (hh:mm:ss):      {duration_str}",
-            f"Security enabled (PSK + AEAD):                          {'Yes' if self.security_enabled else 'No'}",
-            f"Handshake status:                                        {'Success' if self.handshake_done else 'Fail'}",
-            f"AEAD authentication failures (invalid packets dropped): {self.aead_failures}",
-            f"Replay drops (duplicate/out-of-window packets):         {self.replay_drops}",
-            f"SHA-256 match:                                           {'Yes' if self.sha256_match else 'No'}",
-            "=" * 50,
+            border,
+            "SERVER REPORT",
+            border,
+            f"Name of the transferred file:        {filename}",
+            f"Size of the transferred file:        {size_bytes} bytes",
+            f"Number of packets sent from the server:   {self.packets_sent}",
+            f"Number of retransmitted packets:          {self.retransmissions}",
+            f"Number of packets received from client:   {self.packets_from_client}",
+            f"Time duration of the file transfer:       {duration_str}",
+            f"Original file MD5:                        {md5_hash}",
+            border,
         ]
 
         report_text = "\n".join(lines)
+        print("\n" + report_text + "\n")
 
-        # Print to terminal as before
-        print("\n" + report_text)
-
-        # Also save to disk — this is the file the spec asks for
         report_path = "transfer_report.txt"
         with open(report_path, "w") as f:
             f.write(report_text + "\n")
-
         print(f"[SERVER] Report saved to {report_path}")
 
     def start(self):

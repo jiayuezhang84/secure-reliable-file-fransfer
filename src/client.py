@@ -44,6 +44,18 @@ def compute_sha256(path: str) -> bytes:
     return h.digest()
 
 
+def compute_md5(path: str) -> str:
+    """
+    Compute MD5 hash of a file, returned as a hex string.
+    Required by the assignment to verify file integrity (md5sum on both sides).
+    """
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 class SRFTClient:
     def __init__(self, cfg, filename):
         self.cfg = cfg
@@ -68,7 +80,7 @@ class SRFTClient:
         self.send_socket = init_send_socket()
 
         self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_UDP)
-        
+
         """ binding receive socket at client IP, with a timeout """
         self.recv_socket.bind((self.client_ip, 0))
         self.recv_socket.settimeout(RECEIVE_TIMEOUT)
@@ -86,9 +98,9 @@ class SRFTClient:
         self.output_fp = open(self.output_file, "wb")
 
         self.last_ack_sent = 0.0
-        """ initialize ack_needed from client to false, 
-            this tracks if an ack still needs to be sent from client to server after 
-            receiving payload 
+        """ initialize ack_needed from client to false,
+            this tracks if an ack still needs to be sent from client to server after
+            receiving payload
         """
         self.ack_needed = False
 
@@ -103,9 +115,17 @@ class SRFTClient:
         self.handshake_done = False
 
         # reporting / counters
-        self.aead_failures = 0
-        self.replay_drops = 0
-        self.sha256_match = False
+        self.aead_failures   = 0
+        self.replay_drops    = 0
+        self.sha256_match    = False
+        self.duplicate_count = 0      # packets already received (late retransmissions)
+        self.ooo_count       = 0      # out-of-order packets buffered
+        self.checksum_errors = 0      # packets dropped due to bad SRFT checksum
+        self.packets_from_server = 0  # total DATA packets received
+
+        # transfer timing for report
+        self.transfer_start_time = None
+        self.transfer_end_time   = None
 
         # replay tracking
         self.seen_secure_seqs = set()
@@ -166,10 +186,17 @@ class SRFTClient:
 
     def handle_data(self, received_seq, payload):
         with self.lock:
-            """ if the received seq number is lower than expected(OLD PACKET), then need to ack again """
+            # Start timing on first data packet received
+            if self.transfer_start_time is None:
+                self.transfer_start_time = time.time()
+
+            self.packets_from_server += 1
+
+            """ if the received seq number is lower than expected (OLD PACKET), then need to ack again """
             if received_seq < self.expected_seq:
                 self.ack_needed = True
-                self.replay_drops += 1
+                self.replay_drops  += 1
+                self.duplicate_count += 1
                 return
 
             """ if received seq number is equal to expected, then need to write output and increment expected """
@@ -186,8 +213,10 @@ class SRFTClient:
             elif received_seq not in self.buffer:
                 """ sequence number greater than expected, receiving later packets earlier out of order, add to buffer """
                 self.buffer[received_seq] = payload
+                self.ooo_count += 1
             else:
-                self.replay_drops += 1
+                self.replay_drops  += 1
+                self.duplicate_count += 1
 
             """ after processing packet based on received_seq, need to acknowledge processed """
             self.ack_needed = True
@@ -214,12 +243,12 @@ class SRFTClient:
             if udp_header_data[UDP_SRC] != self.server_port or udp_header_data[UDP_DST] != self.client_port:
                 continue
 
-
             """ parse the SRFT data """
             try:
                 header, payload = unpack_packet(packet[content_start_index:])
             except ValueError:
-                """ keep listening for the next packet parsing SRFT fails """
+                """ keep listening for the next packet if parsing SRFT fails """
+                self.checksum_errors += 1
                 continue
 
             if header[TYPE] == TYPE_HELLO_SERVER:
@@ -253,6 +282,7 @@ class SRFTClient:
                         packet[content_start_index:]
                     )
                 except ValueError:
+                    self.checksum_errors += 1
                     continue
 
                 if session_id != self.session_id:
@@ -320,6 +350,7 @@ class SRFTClient:
                 self.output_fp.flush()
                 local_digest = compute_sha256(self.output_file)
                 self.sha256_match = (local_digest == sender_digest)
+                self.transfer_end_time = time.time()
 
                 print(f"[CLIENT] SHA-256 match: {self.sha256_match}")
 
@@ -339,19 +370,20 @@ class SRFTClient:
 
                 """ lock to protect expected_seq and ack_number from race conditions """
                 with self.lock:
-                    """ if received sequence for FIN is expected sequence, then we can complete, """
+                    """ if received sequence for FIN is expected sequence, then we can complete """
                     if header[SEQ] == self.expected_seq:
                         self.expected_seq += 1
                         ack_number = self.expected_seq
                         transfer_complete = True
                     else:
                         """ we cant complete yet, packets missing between fin seq and expected seq
-                        becasue fin came too early """
+                        because fin came too early """
                         ack_number = self.expected_seq
                     bit_map_payload = create_rec_bit_map(ack_number, self.buffer.keys())
 
                 """ send the current cumulative ack """
                 self.send_ack(ack_number, bit_map_payload)
+                self.transfer_end_time = time.time()
 
                 if transfer_complete:
                     self.finished = True
@@ -366,7 +398,7 @@ class SRFTClient:
     def ack_loop(self):
         """ run while client is running """
         while self.running:
-            """ wait a little to ack  """
+            """ wait a little to ack """
             time.sleep(self.ack_interval)
 
             """ lock to protect expected_seq and ack_number from race conditions """
@@ -382,6 +414,58 @@ class SRFTClient:
 
             with self.lock:
                 self.ack_needed = ack_number != self.expected_seq
+
+    def write_report(self):
+        """
+        Print and save the CLIENT REPORT matching the required sample format.
+        Saved to client_report.txt.
+        """
+        # Compute received file MD5
+        received_md5 = "N/A"
+        if self.finished and os.path.isfile(self.output_file):
+            received_md5 = compute_md5(self.output_file)
+
+        # Transfer duration
+        if self.transfer_start_time and self.transfer_end_time:
+            duration_s = self.transfer_end_time - self.transfer_start_time
+        else:
+            duration_s = 0.0
+        hours        = int(duration_s // 3600)
+        minutes      = int((duration_s % 3600) // 60)
+        seconds      = int(duration_s % 60)
+        duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+        file_size = 0
+        if os.path.isfile(self.output_file):
+            file_size = os.path.getsize(self.output_file)
+
+        border = "=" * 50
+
+        lines = [
+            border,
+            "CLIENT REPORT",
+            border,
+            f"Security enabled (PSK + AEAD):            {'Yes' if self.security_enabled else 'No'}",
+            f"Handshake status:                         {'True' if self.handshake_done else 'False'}",
+            f"Size of the transferred file:             {file_size} bytes",
+            f"Number of packets received from server:   {self.packets_from_server}",
+            f"Number of duplicate packets:              {self.duplicate_count}",
+            f"Number of out-of-order packets:           {self.ooo_count}",
+            f"Number of packets with checksum errors:   {self.checksum_errors}",
+            f"Time duration of the file transfer:       {duration_str}",
+            f"Received file MD5:                        {received_md5}",
+            f"AEAD authentication failures:             {self.aead_failures}",
+            f"SHA-256 match:                            {'Yes' if self.sha256_match else 'No'}",
+            border,
+        ]
+
+        report_text = "\n".join(lines)
+        print("\n" + report_text + "\n")
+
+        report_path = "client_report.txt"
+        with open(report_path, "w") as f:
+            f.write(report_text + "\n")
+        print(f"[CLIENT] Report saved to {report_path}")
 
     # Start client
     def start(self):
@@ -405,29 +489,26 @@ class SRFTClient:
                     self.server_error = "Handshake failed"
                     self.running = False
                     break
-                time.sleep(0.1) # gap the check frequency
+                time.sleep(0.1)  # gap the check frequency
 
         if self.running:
             self.send_request()
 
         while self.running:
             time.sleep(0.1)
-        
+
         time.sleep(2.0)  # wait for delayed attack packets
 
         self.output_fp.close()
 
-        print(f"[CLIENT] Security enabled: {'Yes' if self.security_enabled else 'No'}")
-        print(f"[CLIENT] Handshake status: {'Success' if self.handshake_done else 'Fail'}")
-        print(f"[CLIENT] AEAD authentication failures: {self.aead_failures}")
-        print(f"[CLIENT] Replay drops: {self.replay_drops}")
-        print(f"[CLIENT] SHA-256 match: {'Yes' if self.sha256_match else 'No'}")
+        # Print and save the CLIENT REPORT
+        self.write_report()
 
         if self.finished:
             print(f"[CLIENT] file saved as {self.output_file}")
         elif self.server_error:
             print(f"[CLIENT] server error: {self.server_error}")
-            """ remove any output file at client if the transfer from server failed """ 
+            """ remove any output file at client if the transfer from server failed """
             if os.path.exists(self.output_file):
                 os.remove(self.output_file)
         else:
