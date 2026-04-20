@@ -7,10 +7,10 @@
   },
   "transfer": {
     "chunk_size": 1400,
-    "send_window_packets": 256
+    "send_window_packets": 512
   },
   "timers": {
-    "rto_ms": 500,
+    "rto_ms": 50,
     "ack_interval_ms": 10,
     "handshake_timeout_ms": 3000
   },
