@@ -803,10 +803,16 @@ class SRFTServer:
             print(f"[SERVER] *** ATTACK MODE: {self.attack_mode} ***")
 
         start_time = time.time()
-        self.receive_loop()
-        end_time = time.time()
-
-        self.write_report(duration_seconds=end_time - start_time)
+        """ receive loop in try except, so that 
+        when we ^C out of server, the report still gets written """
+        try:
+            self.receive_loop()
+        except KeyboardInterrupt:
+            self.running = False
+            print("\n[SERVER] Shutting down")
+        finally:
+            end_time = time.time()
+            self.write_report(duration_seconds=end_time - start_time)
 
 
 def run_server(cfg, attack_mode=None):
