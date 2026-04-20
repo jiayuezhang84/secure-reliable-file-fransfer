@@ -23,7 +23,8 @@ from src.core.packet import (
     TYPE_FIN_DIGEST,
     SEQ,
     TYPE,
-    ACK
+    ACK,
+    create_rec_bit_map
 )
 
 from src.core.checksum_utils import decrypt_packet, encrypt_packet, build_add
@@ -135,14 +136,14 @@ class SRFTClient:
         self.send_udp_packet(self.server_ip, self.client_port, self.server_port, req_packet)
         print(f"[CLIENT] requested file: {self.filename}")
 
-    def send_ack(self, ack_number):
+    def send_ack(self, ack_number, bit_map_payload=b""):
         if self.security_enabled and self.handshake_done:
             seq_num = 0
             nonce = os.urandom(12)
             aad = build_add(self.session_id, seq_num, ack_number, TYPE_ACK)
 
             ciphertext = encrypt_packet(
-                b"",
+                bit_map_payload,
                 self.enc_key,
                 nonce,
                 aad
@@ -157,7 +158,7 @@ class SRFTClient:
                 ciphertext
             )
         else:
-            ack_packet = pack_packet(TYPE_ACK, 0, ack_number, b"")
+            ack_packet = pack_packet(TYPE_ACK, 0, ack_number, bit_map_payload)
 
         self.send_udp_packet(self.server_ip, self.client_port, self.server_port, ack_packet)
         self.last_ack_sent = time.time()
@@ -312,8 +313,9 @@ class SRFTClient:
                         transfer_complete = True
                     else:
                         ack_number = self.expected_seq
+                    bit_map_payload = create_rec_bit_map(ack_number, self.buffer.keys())
 
-                self.send_ack(ack_number)
+                self.send_ack(ack_number, bit_map_payload)
 
                 self.output_fp.flush()
                 local_digest = compute_sha256(self.output_file)
@@ -346,9 +348,10 @@ class SRFTClient:
                         """ we cant complete yet, packets missing between fin seq and expected seq
                         becasue fin came too early """
                         ack_number = self.expected_seq
+                    bit_map_payload = create_rec_bit_map(ack_number, self.buffer.keys())
 
                 """ send the current cumulative ack """
-                self.send_ack(ack_number)
+                self.send_ack(ack_number, bit_map_payload)
 
                 if transfer_complete:
                     self.finished = True
@@ -372,9 +375,10 @@ class SRFTClient:
                     continue
 
                 ack_number = self.expected_seq
+                bit_map_payload = create_rec_bit_map(ack_number, self.buffer.keys())
 
             """ sends cumulative ack """
-            self.send_ack(ack_number)
+            self.send_ack(ack_number, bit_map_payload)
 
             with self.lock:
                 self.ack_needed = ack_number != self.expected_seq

@@ -25,7 +25,8 @@ from src.core.packet import (
     TYPE,
     PAYLOAD,
     SENT_AT,
-    ACK
+    ACK,
+    extract_rec_at_client_bit_map
 )
 from src.core.checksum_utils import encrypt_packet, decrypt_packet, build_add
 from src.core.security import (
@@ -35,6 +36,11 @@ from src.core.security import (
 )
 
 EMPTY_BYTES = b""
+"""
+maximum number of bitmap based retransmissions that can be triggered
+per ack received from client at server
+"""
+BIT_MAP_RETRANSMIT_LIMIT = 8
 
 
 def compute_sha256(path: str) -> bytes:
@@ -72,7 +78,7 @@ class SRFTServer:
         self.recv_socket.settimeout(RECEIVE_TIMEOUT)
 
         # sliding window state
-        self.base = 0
+        self.base = 0 # base is the first packet in the sliding window of packets to send
         self.next_seq = 0
         self.unacked = {}
 
@@ -111,8 +117,6 @@ class SRFTServer:
         self.aead_failures = 0
         self.replay_drops = 0
         self.sha256_match = False
-
-        self.seen_acks = set()
 
         # For the transfer report file
         self.current_filename = None   # name of the file being transferred
@@ -337,6 +341,161 @@ class SRFTServer:
 
         return chunk
 
+    """ get the packet data to do the retransmission  """
+    def _get_retransmission_packet_data(self, seq):
+        """ first get the packet data reference for unacked packet """
+        packet_data = self.unacked.get(seq)
+        if packet_data is None or self.client_ip is None or self.client_port is None:
+            return None
+
+        """ mark send at time now, because we are going to send it now,
+        and we dont want server to repick this for retransmission now """
+        packet_data[SENT_AT] = time.time()
+
+        return (
+            self.client_ip,
+            self.client_port,
+            packet_data[PAYLOAD],
+            packet_data[TYPE],
+        )
+
+    """ send the retransmission via send_udp_packet,
+    not send and track ack, because we want to resend
+    an already tracked unacked packet """
+    def _send_retransmission_packet(self, seq, retransmit_info):
+
+        client_ip, client_port, payload, msg_type = retransmit_info
+        self.send_udp_packet(client_ip, self.server_port, client_port, payload)
+        self.retransmissions += 1
+
+        if msg_type in (TYPE_FIN, TYPE_FIN_DIGEST):
+            packet_type = "FIN"
+        else:
+            packet_type = "DATA"
+
+        self.log_verbose(f"[SERVER] retransmitted {packet_type} seq {seq}")
+
+
+    """ identify the oldest unacked packet,
+    check if it should be retransmitted,
+    then fetch its retransmit info,
+    must be called with lock held """
+    def _find_oldest_unacked_packet(self):
+
+        """ pick the oldest unacked seq number  """
+        if self.base in self.unacked:
+            oldest_unacked_seq = self.base
+        else:
+            oldest_unacked_seq = min(self.unacked)
+
+        packet_data = self.unacked.get(oldest_unacked_seq)
+
+        """ nothing to transmit """
+        if packet_data is None:
+            return None
+
+        """ too little time passed, dont retransmit retranmission """ 
+        if self.rto > time.time() - packet_data[SENT_AT]:
+            return None
+
+        """ get all required data for the retransmission """
+        retransmit_info = self._get_retransmission_packet_data(oldest_unacked_seq)
+        if retransmit_info is None:
+            return None
+
+        """ return picked oldest packet to retransmit  """
+        return oldest_unacked_seq, retransmit_info
+
+    """ determines which packets actually need to be retransmitted,
+    based on the cumulative ack from client, and known received at client seqs 
+    after the cumulative ack"""
+    def _fill_retransmissions(self, oldest_seq_needed_at_client, received_seqs):
+        if not received_seqs:
+            return []
+
+        """ get the largest received seq number, oldest(cumulative acked) to largest received seq number at client
+        to determine which packets to retransmit
+        """
+        largest_received_seq = max(received_seqs)
+        retransmissions = []
+        too_soon = self.rto / 4
+        now = time.time()
+
+        for seq in sorted(self.unacked):
+            """ already received at client, no need to retransmit """
+            if seq in received_seqs:
+                continue
+
+            """ dont care about these, we don't track them in bit map """
+            if seq > largest_received_seq or seq < oldest_seq_needed_at_client:
+                continue
+
+            
+            packet_data = self.unacked.get(seq)
+            """ if the packet was sent too recently, then we don't want to send it again 
+            """
+            if now - packet_data[SENT_AT] < too_soon:
+                continue
+
+            retransmit_info = self._get_retransmission_packet_data(seq)
+            if retransmit_info:
+                retransmissions.append((seq, retransmit_info))
+
+            """ stay within limit of how many retransmissions can be done per cumulative
+            ack received from client at server """
+            if len(retransmissions) >= BIT_MAP_RETRANSMIT_LIMIT:
+                break
+
+        return retransmissions
+
+    """
+    determine which packets actually need to be resent between packets which 
+    were sent after the base cumulative ack,
+    and update base cumulative ack to new value if all packets received beyond current base cumulative ack
+    till new value,
+    needs to be called when lock held
+    """
+    def _get_retransmissions(self, oldest_seq_needed_at_client, received_seqs):
+        retransmissions = []
+
+        """ base is oldest unacked seq num at server,
+        if client is still waiting for base seq at server """
+    
+        """ we can remove all seqs that are older than the oldest unacked seq at client,
+         because client already has them """
+        sorted_unacked = sorted(list(self.unacked))
+        for seq in sorted_unacked:
+            if seq < oldest_seq_needed_at_client:
+                self.unacked.pop(seq)
+
+        """ update the knowledge of oldest seq needed at client at server """
+        self.base = oldest_seq_needed_at_client
+
+        """ update window with new packets after base updated, and send the new packets in window """
+        self.send_sliding_window()
+
+        """ determine which packets are not present at client, and add them to retransmissions """
+        not_present_at_client = self._fill_retransmissions(oldest_seq_needed_at_client, received_seqs)
+        retransmissions.extend(not_present_at_client)
+
+        if self.fin_sent and oldest_seq_needed_at_client >= self.next_seq and not self.unacked:
+            self.sha256_match = True
+            self.reset_transfer_variables()
+
+        return retransmissions
+
+    """ dedup the list of retransmissions before sending them"""
+    def _send_retransmissions(self, retransmissions):
+
+        seen_retransmit_seqs = set()
+
+        for seq, retransmit_info in retransmissions:
+            if seq in seen_retransmit_seqs:
+                continue
+
+            seen_retransmit_seqs.add(seq)
+            self._send_retransmission_packet(seq, retransmit_info)
+
     """ this function sends as many new data packets allowed using sliding window constraint, and 
         sends FIN packet only after all the data is sent to client and acknowledged by client,
         since it calls send_packet_and_track_ack and sets next_seq this function should always be called from code
@@ -381,7 +540,6 @@ class SRFTServer:
         self.client_ip = None
         self.client_port = None
         self.original_digest = None
-        self.seen_acks.clear()
 
     def handle_request(self, client_ip, client_port, filename):
         """ need to handle case when another transfer in progress and error out on new request """
@@ -440,7 +598,7 @@ class SRFTServer:
 
             """ need to iterate over all unacknowledged packets and determine which have timed out
             and need to be resent """
-            timed_out = []
+            retransmissions = []
             """ need to acquire lock before reading transmission_id and unacked """
             with self.lock:
                 """ transmission id has to be the currently active transmission id and transfer has to be active for this 
@@ -448,56 +606,28 @@ class SRFTServer:
                 if transmission_id != self.transmission_id or not self.transmission_active:
                     return
 
-                now = time.time()
-                client_ip = self.client_ip
-                client_port = self.client_port
+                retransmit_info = self._find_oldest_unacked_packet()
+                if retransmit_info:
+                    retransmissions.append(retransmit_info)
 
+            self._send_retransmissions(retransmissions)
 
-                """ find all unacknowledged packets which have timed out """
-                for seq, packet_data in self.unacked.items():
-                    if now - packet_data[SENT_AT] >= self.rto:
-                        packet_data[SENT_AT] = now
-                        timed_out.append((seq, packet_data[PAYLOAD], packet_data[TYPE]))
-
-
-            """ iterate through all the timed out packets which are unacked, and resend them """
-            for seq, payload, msg_type in timed_out:
-                self.send_udp_packet(client_ip, self.server_port, client_port, payload)
-                self.retransmissions += 1
-                packet_type = "FIN" if msg_type in (TYPE_FIN, TYPE_FIN_DIGEST) else "DATA"
-                self.log_verbose(f"[SERVER] retransmitted {packet_type} seq {seq}")
-
-    def process_ack(self, ack):
+    def process_ack(self, oldest_seq_needed_at_client, sack_payload=b""):
+        received_seqs = extract_rec_at_client_bit_map(oldest_seq_needed_at_client, sack_payload)
+        retransmissions = []
 
         """ acquire lock before reading/writing unacked map and transmission_active """
         with self.lock:
-
             """ only need to process acks when there is active transmission """
             if not self.transmission_active:
                 return
 
-            if ack in self.seen_acks:
-                self.replay_drops += 1
-                return
-            self.seen_acks.add(ack)
-
-            if ack <= self.base or ack > self.next_seq:
+            if oldest_seq_needed_at_client < self.base or oldest_seq_needed_at_client > self.next_seq:
                 return
 
-            """ remove all packets that were 'unacked' but less than the cumulative ack number """
-            for seq in sorted(list(self.unacked)):
-                if seq < ack:
-                    self.unacked.pop(seq)
+            retransmissions = self._get_retransmissions(oldest_seq_needed_at_client, received_seqs)
 
-            """ update base to cumulative ack """
-            self.base = ack
-            """ fill window with more data packets """
-            self.send_sliding_window()
-
-            """ if FIN send and all acked, then we can finish the transfer, and reset server for doing the next transfer """
-            if self.fin_sent and ack >= self.next_seq and not self.unacked:
-                self.sha256_match = True
-                self.reset_transfer_variables()
+        self._send_retransmissions(retransmissions)
 
     # Receive loop
     def receive_loop(self):
@@ -615,10 +745,10 @@ class SRFTServer:
                         continue
 
                     self.log_verbose(f"[SERVER][DEBUG] accepted secure ACK {secure_header[ACK]}")
-                    self.process_ack(secure_header[ACK])
+                    self.process_ack(secure_header[ACK], plaintext)
                 else:
                     self.log_verbose(f"[SERVER][DEBUG] accepted ACK {header[ACK]}")
-                    self.process_ack(header[ACK])
+                    self.process_ack(header[ACK], payload)
 
     def write_report(self, duration_seconds: float):
         """
