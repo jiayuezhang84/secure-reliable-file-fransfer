@@ -290,6 +290,7 @@ class SRFTClient:
 
                 if secure_header[SEQ] in self.seen_secure_seqs:
                     self.replay_drops += 1
+                    self.duplicate_count += 1
                     continue
 
                 aad = build_add(session_id, secure_header[SEQ], secure_header[ACK], TYPE_DATA)
@@ -446,10 +447,11 @@ class SRFTClient:
             "CLIENT REPORT",
             border,
             f"Security enabled (PSK + AEAD):            {'Yes' if self.security_enabled else 'No'}",
-            f"Handshake status:                         {'True' if self.handshake_done else 'False'}",
+            f"Handshake status:                         {'Success' if self.handshake_done else 'Fail'}",
             f"Size of the transferred file:             {file_size} bytes",
             f"Number of packets received from server:   {self.packets_from_server}",
             f"Number of duplicate packets:              {self.duplicate_count}",
+            f"Replay drops:                             {self.replay_drops}",
             f"Number of out-of-order packets:           {self.ooo_count}",
             f"Number of packets with checksum errors:   {self.checksum_errors}",
             f"Time duration of the file transfer:       {duration_str}",

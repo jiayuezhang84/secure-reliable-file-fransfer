@@ -779,13 +779,16 @@ class SRFTServer:
             border,
             "SERVER REPORT",
             border,
-            f"Name of the transferred file:        {filename}",
-            f"Size of the transferred file:        {size_bytes} bytes",
+            f"Name of the transferred file:             {filename}",
+            f"Size of the transferred file:             {size_bytes} bytes",
             f"Number of packets sent from the server:   {self.packets_sent}",
             f"Number of retransmitted packets:          {self.retransmissions}",
             f"Number of packets received from client:   {self.packets_from_client}",
             f"Time duration of the file transfer:       {duration_str}",
             f"Original file MD5:                        {md5_hash}",
+            f"Security enabled (PSK + AEAD):            {'Yes' if self.security_enabled else 'No'}",
+            f"Handshake status:                         {'Success' if self.handshake_done else 'Fail'}",
+            f"AEAD authentication failures:             {self.aead_failures}",
             border,
         ]
 
