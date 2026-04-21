@@ -224,11 +224,13 @@ The application is split into three layers:
 
 All tests run on AWS EC2 instances. Packet loss was simulated using `tc netem` on the network interface. Duration is wall-clock time reported in `transfer_report.txt`.
 
-| File | File Size | No Packet Loss | 2% Packet Loss | 3% Packet Loss | 4% Packet Loss | Secure (No Packet Loss) |
-|------|-----------|---------------|----------------|----------------|----------------|------------------------|
-| small_test.bin | ~500 KB | | | | | |
-| medium_test.bin | ~5 MB | | | | | |
-| large_test.bin | ~10 MB | | | | | |
+| File | File Size | No Packet Loss | 2% Packet Loss | 3% Packet Loss | 4% Packet Loss |
+|------|-----------|---------------|----------------|----------------|----------------|
+| small_test.bin | 10 MB | 00:04 | 00:03 | 00:04 | 00:04 |
+| medium_test.bin | 100 MB | 00:37 | 00:42 | 00:42 | 00:42 |
+| large_test.bin | 500 MB | 03:06 | 03:30 | 03:35 | 03:44 | 
+| xlarge_test.bin | 800 MB | 04:59 | 05:33 | 05:46 | 05:56 |
+| xxlarge_test.bin | 1 GB | 06:24 | 07:03 | 07:31 | 07:39 |
 
 
 ---
