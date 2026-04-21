@@ -13,6 +13,8 @@ TYPE_ERR  = 5
 
 HEADER_FORMAT = "!4sBBHIIHHHH"
 HEADER_LEN = struct.calcsize(HEADER_FORMAT)
+BIT_MAP_BITS = 64
+BIT_MAP_BYTES = BIT_MAP_BITS // 8
 
 """ header keys """
 SEQ = "seq"
@@ -145,3 +147,67 @@ def unpack_secure_packet(packet: bytes) -> tuple[dict, bytes, bytes, bytes]:
     header, payload = unpack_packet(packet)
     session_id, nonce, ciphertext = unpack_secure_payload(payload)
     return header, session_id, nonce, ciphertext
+
+
+"""
+get the offset index for the bitmap based on the bitmap window start at base
+and the size of the bitmap
+"""
+def _get_offset_index_in_bitmap(base_ack: int, seq: int):
+    offset_index = seq - base_ack - 1
+    """ if index is not within the bitmap range after base then we cannot assign valid offset """
+    if 0 <= offset_index < BIT_MAP_BITS:
+        return offset_index
+    return None
+
+
+"""
+create a 8 byte bitmap to identify which 
+packets sent to client after base cumulative ack
+which were already received at client,
+and don't have to be retransmitted,
+1 means no client already has, no retransmission required,
+bit map created at client
+"""
+def create_rec_bit_map(base_ack: int, received_seqs):
+    bit_map = 0
+
+    for seq in received_seqs:
+        
+        """ convert a seq number into offset index in bit map """
+        offset = _get_offset_index_in_bitmap(base_ack, seq)
+        if offset is None:
+            continue
+
+        """ iteratively set the bit corresponding to rec seq num at that offset to 1 """
+        bit_set_for_seq = 1 << offset
+        bit_map = bit_map | bit_set_for_seq
+
+    """ convert the integer bit map into 8 bytes variable, because payload
+    has to be bytes for packets sent """
+    return bit_map.to_bytes(BIT_MAP_BYTES, "big")
+
+
+""" 
+this function extract the bit map in bytes from payload,
+bit map created at client,
+and then extracted at server,
+used by server to identify 
+which packets sent to client after base cumulative ack
+are already received, so we don't have to keep resending
+packets which are already received at client
+"""
+def extract_rec_at_client_bit_map(base_ack: int, payload: bytes):
+    
+    """ convert bytes from packet to integer bit map"""
+    bit_map = int.from_bytes(payload, "big")
+    received_seqs = set()
+
+    """ check every offset and identify the packets that don't need to be resent again """
+    for offset_index in range(BIT_MAP_BITS):
+        bit_for_seq = 1 << offset_index
+        if bit_map & bit_for_seq:
+            seq = base_ack + offset_index + 1
+            received_seqs.add(seq)
+    """ seqs which dont have to be sent to client again after base cumulative ack """
+    return received_seqs
