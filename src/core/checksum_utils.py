@@ -104,22 +104,45 @@ MAX_SEQ = 2**32
 aead_failures = 0
 
 # aad init
+# ===== BUILD AAD (IMPORTANT FOR SECURITY) =====
 def build_add(session_id: bytes, seq: int, ack:int, flags:int) -> bytes:
+    # AAD = Additional Authenticated Data
+    # These values are NOT encrypted, but are protected.
+    # If attacker modifies seq/ack/session → decryption fails.
+
     return(
-        session_id +
-        struct.pack("!I", seq % MAX_SEQ) +
-        struct.pack("!I", ack % MAX_SEQ) + 
-        struct.pack("!B", flags & 0xFF)
+        session_id +                           # identifies connection
+        struct.pack("!I", seq % MAX_SEQ) +     # sequence number (4 bytes)
+        struct.pack("!I", ack % MAX_SEQ) +     # acknowledgment number (4 bytes)
+        struct.pack("!B", flags & 0xFF)        # flags (1 byte)
     )
     
+# ===== ENCRYPT PACKET =====
 def encrypt_packet(plaintext: bytes, enc_key: bytes, nonce: bytes, aad: bytes) -> bytes:
+    # Encrypts the data so:
+    # - attackers cannot read it (confidentiality)
+    # - any modification is detected (integrity via AES-GCM)
+    # AAD is included → protects metadata (seq, ack, session_id)
+
     return AESGCM(enc_key).encrypt(nonce, plaintext, aad)
 
+# ===== DECRYPT PACKET =====
 def decrypt_packet(ciphertext: bytes, enc_key: bytes, nonce: bytes, aad: bytes) -> bytes | None:
+    # Decrypts the data AND verifies integrity.
+    #
+    # If ANYTHING was modified:
+    # - ciphertext
+    # - nonce
+    # - AAD (seq, ack, session_id)
+    #
+    # → decryption fails
+
     global aead_failures
+
     try:
         return AESGCM(enc_key).decrypt(nonce, ciphertext, aad)
+
     except Exception:
+        # failure = tampering / wrong key / replay attack
         aead_failures += 1
         return None
-
