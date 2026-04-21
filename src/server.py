@@ -490,9 +490,6 @@ class SRFTServer:
         not_present_at_client = self._fill_retransmissions(oldest_seq_needed_at_client, received_seqs)
         retransmissions.extend(not_present_at_client)
 
-        if self.fin_sent and oldest_seq_needed_at_client >= self.next_seq and not self.unacked:
-            self.sha256_match = True
-            self.reset_transfer_variables()
 
         return retransmissions
 
@@ -552,6 +549,10 @@ class SRFTServer:
         self.client_ip = None
         self.client_port = None
         self.original_digest = None
+        self.current_filename = None
+        self.file_size_bytes = 0
+        self.transfer_start_time = None
+        self.original_md5 = None
 
     def handle_request(self, client_ip, client_port, filename):
         """ need to handle case when another transfer in progress and error out on new request """
@@ -588,6 +589,11 @@ class SRFTServer:
             self.current_filename    = filename
             self.file_size_bytes     = file_size_bytes
             self.transfer_start_time = time.time()
+            self.packets_sent = 0
+            self.retransmissions = 0
+            self.packets_from_client = 0
+            self.aead_failures = 0
+            self.sha256_match = False
 
             current_transmission_id = self.transmission_id
 
@@ -626,7 +632,8 @@ class SRFTServer:
     def process_ack(self, oldest_seq_needed_at_client, sack_payload=b""):
         received_seqs = extract_rec_at_client_bit_map(oldest_seq_needed_at_client, sack_payload)
         retransmissions = []
-
+        transfer_finished = False
+        duration_seconds = 0.0
         """ acquire lock before reading/writing unacked map and transmission_active """
         with self.lock:
             """ only need to process acks when there is active transmission """
@@ -637,6 +644,17 @@ class SRFTServer:
                 return
 
             retransmissions = self._get_retransmissions(oldest_seq_needed_at_client, received_seqs)
+
+            if self.fin_sent and oldest_seq_needed_at_client >= self.next_seq and not self.unacked:
+                self.sha256_match = True
+
+                if self.transfer_start_time is not None:
+                    duration_seconds = time.time() - self.transfer_start_time
+                # if transfer_finished:
+                self.write_report(duration_seconds)
+                transfer_finished = True
+                self.reset_transfer_variables()
+                return
 
         self._send_retransmissions(retransmissions)
 
@@ -805,7 +823,6 @@ class SRFTServer:
         if self.attack_mode:
             print(f"[SERVER] *** ATTACK MODE: {self.attack_mode} ***")
 
-        start_time = time.time()
         """ receive loop in try except, so that 
         when we ^C out of server, the report still gets written """
         try:
@@ -813,9 +830,6 @@ class SRFTServer:
         except KeyboardInterrupt:
             self.running = False
             print("\n[SERVER] Shutting down")
-        finally:
-            end_time = time.time()
-            self.write_report(duration_seconds=end_time - start_time)
 
 
 def run_server(cfg, attack_mode=None):
