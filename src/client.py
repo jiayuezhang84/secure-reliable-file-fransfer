@@ -36,23 +36,31 @@ from src.core.security import (
 
 
 def compute_sha256(path: str) -> bytes:
+    """
+    Computes SHA-256 hash of a file and returns it as raw bytes.
+    Used in the transfer protocol to verify file integrity.
+    Server sends this hash in FIN_DIGEST packet.
+    Client recomputes and compares — match means file arrived intact.
+    Reads in chunks to avoid loading large files into memory.
+    """
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
-    return h.digest()
+    with open(path, "rb") as f:                        # open file in binary mode
+        for chunk in iter(lambda: f.read(4096), b""): # read 4096 bytes at a time until EOF
+            h.update(chunk)                            # feed chunk into hash calculator
+    return h.digest()                                  # return final 32 raw bytes
 
 
 def compute_md5(path: str) -> str:
     """
-    Compute MD5 hash of a file, returned as a hex string.
-    Required by the assignment to verify file integrity (md5sum on both sides).
+    Computes MD5 hash of a file and returns it as a hex string.
+    Used only for report display, not for security.
+    MD5 is cryptographically broken so SHA-256 is used for actual verification.
     """
     h = hashlib.md5()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    with open(path, "rb") as f:                        # open file in binary mode
+        for chunk in iter(lambda: f.read(4096), b""): # read 4096 bytes at a time until EOF
+            h.update(chunk)                            # feed chunk into hash calculator
+    return h.hexdigest()                               # return hex string for report display
 
 
 class SRFTClient:
@@ -130,6 +138,8 @@ class SRFTClient:
         self.seen_secure_seqs = set()
 
     def send_udp_packet(self, dst_ip, src_port, dst_port, payload):
+        # manually build full packet (IP + UDP + SRFT)
+        # Wraps SRFT payload inside UDP, then inside IP, then sends
         udp_header = build_udp_header(src_port, dst_port, payload, self.client_ip, dst_ip)
         ip_header = build_ipv4_header(
             self.client_ip,
@@ -140,25 +150,41 @@ class SRFTClient:
         self.send_socket.sendto(packet, (dst_ip, 0))
 
     def log_verbose(self, message):
+        # only prints if verbose_logs is enabled in config — avoids spam during benchmarks
         if self.verbose_logs_enabled:
             print(message)
 
     def send_client_hello(self):
+        """
+        Initiates the security handshake (Phase 2).
+        Sends client_nonce + HMAC proof that we know the PSK.
+        Server verifies and responds with ServerHello.
+        """
         self.client_nonce, payload = build_client_hello(self.psk)
         pkt = pack_packet(TYPE_HELLO_CLIENT, 0, 0, payload)
         self.send_udp_packet(self.server_ip, self.client_port, self.server_port, pkt)
         print("[CLIENT] sent ClientHello")
 
     def send_request(self):
+        """
+        Sends a REQ packet to the server requesting the file.
+        Filename is encoded as bytes and sent as the packet payload.
+        """
         req_payload = self.filename.encode()
         req_packet = pack_packet(TYPE_REQ, 0, 0, req_payload)
         self.send_udp_packet(self.server_ip, self.client_port, self.server_port, req_packet)
         print(f"[CLIENT] requested file: {self.filename}")
 
     def send_ack(self, ack_number):
+        """
+        Sends a cumulative ACK to the server.
+        ack_number = next expected sequence number.
+        Tells server everything before ack_number was received successfully.
+        In secure mode, ACK is encrypted with AES-GCM to prevent tampering.
+        """
         if self.security_enabled and self.handshake_done:
             seq_num = 0
-            nonce = os.urandom(12)
+            nonce = os.urandom(12)  # fresh random nonce per ACK
             aad = build_add(self.session_id, seq_num, ack_number, TYPE_ACK)
 
             ciphertext = encrypt_packet(
@@ -184,6 +210,12 @@ class SRFTClient:
         self.log_verbose(f"[CLIENT] sent ACK {ack_number}")
 
     def handle_data(self, received_seq, payload):
+        """
+        Processes a received DATA chunk.
+        - In-order packet: write immediately to output file
+        - Out-of-order packet: store in buffer until earlier packets arrive
+        - Duplicate packet: drop and increment counter
+        """
         with self.lock:
             # Start timing on first data packet received
             if self.transfer_start_time is None:
@@ -221,6 +253,11 @@ class SRFTClient:
             self.ack_needed = True
 
     def receive_loop(self):
+        """
+        Main receive loop — runs in a background thread.
+        Reads all incoming raw packets, filters to our connection,
+        parses IP → UDP → SRFT layers, and dispatches by packet type.
+        """
         while self.running:
             try:
                 packet, _ = self.recv_socket.recvfrom(65535)
@@ -394,6 +431,12 @@ class SRFTClient:
     # ACK loop
     def ack_loop(self):
         """ run while client is running """
+        """
+        Sends periodic cumulative ACKs to the server.
+        Runs in a background thread alongside receive_loop.
+        Only sends when ack_needed is True — avoids unnecessary ACK traffic.
+        ACK value = expected_seq (next sequence number we need).
+        """
         while self.running:
             """ wait a little to ack """
             time.sleep(self.ack_interval)
@@ -465,6 +508,11 @@ class SRFTClient:
 
     # Start client
     def start(self):
+        """
+        Entry point — starts the client.
+        Launches receive and ACK threads, performs handshake if security enabled,
+        sends file request, then waits for transfer to complete.
+        """
         print(f"[CLIENT] running on {self.client_ip}:{self.client_port}")
         print(f"[CLIENT] talking to server {self.server_ip}:{self.server_port}")
 
