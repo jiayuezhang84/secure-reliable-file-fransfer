@@ -70,7 +70,7 @@ sudo PYTHONPATH=. python3 main.py --mode server --config config.json
 sudo PYTHONPATH=. python3 main.py --mode client --config config.json --file <filename>
 ```
 
-The server writes `transfer_report.txt` after each transfer completes.
+The server writes `transfer_report.txt` and the client writes `client_report.txt` after each transfer completes.
 
 ### Running Security Attack Simulation (server side)
 
@@ -126,7 +126,7 @@ Client                              Server
 
 - **Sliding window:** server sends up to 64 unACKed packets simultaneously (configurable via `send_window_packets`)
 - **Retransmission:** a background thread checks every `rto_ms` (300 ms default) and resends any packet older than the RTO
-- **Cumulative ACKs:** client sends one ACK every `ack_interval_ms` (50 ms) carrying the next expected sequence number; this slides the server's window forward
+- **Cumulative ACKs + Bitmap SACK:** client sends one ACK every `ack_interval_ms` (50 ms) carrying the next expected sequence number plus a bitmap of out-of-order packets already received; server uses the bitmap to retransmit only missing gaps (up to 8 per ACK via `BIT_MAP_RETRANSMIT_LIMIT`)
 - **Out-of-order buffering:** client buffers early-arriving packets and flushes them in order once gaps are filled
 
 ### Security
@@ -162,6 +162,8 @@ Packet types: `REQ(1)`, `DATA(2)`, `ACK(3)`, `FIN(4)`, `ERR(5)`, `HELLO_CLIENT(6
 | Sliding window (configurable size) | Yes |
 | RTO-based retransmission | Yes |
 | Cumulative ACKs | Yes |
+| Bitmap-based Selective ACK (SACK) | Yes |
+| MD5 integrity check (client report) | Yes |
 | Out-of-order packet buffering | Yes |
 | PSK handshake (HMAC-SHA256) | Yes |
 | Session key derivation (HKDF-SHA256) | Yes |
@@ -253,7 +255,7 @@ All tests run on AWS EC2 instances. Packet loss was simulated using `tc netem` o
 ## Possible Future Improvements
 - **Congestion control**: Replace the fixed window size with a dynamic congestion window. Implementing TCP-style slow start and AIMD would improve performance under packet loss.
 - **Certificate-based authentication**: The PSK is a shared secret stored in plaintext config. An improved version could use asymmetric cryptography (e.g., DH key exchange) so no secret needs to be pre-distributed.
-- **Selective ACK**: Currently the implementation uses cumulative ACKs, which causes the server to retransmit everything from base onward on loss. Selective ACK would let the client report exactly which packets it has buffered, so only truly missing packets are retransmitted.
+- **Full congestion control with AIMD**: The bitmap SACK is implemented, but the window size remains fixed. Adding slow-start and AIMD on top of the existing SACK would further reduce unnecessary retransmissions under heavy loss.
 - **Multi-client support**: The server currently handles one transfer at a time. A future version could use the session ID as a demultiplexer to support concurrent transfers from multiple clients.
 - **Resumable transfers**: If a transfer is interrupted, the client must start over from scratch. Adding a resume mechanism (tracking which chunks were already received) would make large file transfers more robust.
 
@@ -261,7 +263,9 @@ All tests run on AWS EC2 instances. Packet loss was simulated using `tc netem` o
 
 ## Transfer Report Format
 
-After each transfer the server writes `transfer_report.txt`:
+After each transfer the server writes `transfer_report.txt` and the client writes `client_report.txt`.
+
+### Server Report (`transfer_report.txt`)
 
 ```
 ==================================================
@@ -280,6 +284,28 @@ Replay drops (duplicate/out-of-window packets):         0
 SHA-256 match:                                           Yes
 ==================================================
 ```
+
+### Client Report (`client_report.txt`)
+
+```
+==================================================
+CLIENT REPORT
+==================================================
+Security enabled (PSK + AEAD):            Yes
+Handshake status:                         Success
+Size of the transferred file:             10485760 bytes
+Number of packets received from server:   8739
+Number of duplicate packets:              0
+Replay drops:                             0
+Number of out-of-order packets:           3
+Number of packets with checksum errors:   0
+Time duration of the file transfer:       00:00:04
+Received file MD5:                        d41d8cd98f00b204e9800998ecf8427e
+AEAD authentication failures:             0
+SHA-256 match:                            Yes
+==================================================
+```
+
 ---
 
 ## Meeting Notes
