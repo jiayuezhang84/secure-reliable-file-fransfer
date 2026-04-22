@@ -82,6 +82,9 @@ The server writes `transfer_report.txt` at server instance after each transfer c
 
 The client writes `client_report.txt` at client instance after each transfer completes.
 
+Please find all the commands we used in:
+phase_1_commands and phase_2_commands files.
+
 ### Running Security Attack Simulation (server side)
 
 These modes inject a deliberate security event to test client-side defenses:
