@@ -1,0 +1,62 @@
+PHASE 2 TESTING
+
+TEST 1 - Secure Transfer (Baseline)
+
+
+Server
+
+SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase2.json" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-100mb-sec.log
+
+CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase2.json --file ./gdrive-folder/test_100mb_file" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-100mb-sec.log
+
+
+TEST 2 - Wrong PSK (Authentication Failure)
+
+
+SERVER
+
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase2.json" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-100mb-sec-2.log
+
+
+CLIENT
+sed -i 's/6cce8bae03f349cc2d0dda4c3bb607dfee82b5920ed9847e367297d2c595502d/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/' config_wrong_psk.json
+
+
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode client --config config_wrong_psk.json --file ./gdrive-folder/test_100mb_file" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-100mb-sec-2.log
+
+
+TEST 3 - Tamper Detection (Integrity)
+SERVER
+
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase2.json --attack tamper" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-100mb-sec-3.log
+
+CLIENT
+
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase2.json --file ./gdrive-folder/test_100mb_file" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-100mb-sec-3.log
+
+
+
+
+
+TEST 4 - Replay Protection
+SERVER
+
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase2.json --attack replay" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-100mb-sec-4.log
+
+CLIENT
+
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase2.json --file ./gdrive-folder/test_100mb_file" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-100mb-sec-4.log
+
+TEST 5 - Forged Injection
+SERVER
+
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase2.json --attack inject" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-100mb-sec-5.log
+
+CLIENT
+
+
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase2.json --file ./gdrive-folder/test_100mb_file" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-100mb-sec-5.log
+
+
