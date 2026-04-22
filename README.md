@@ -206,9 +206,8 @@ The application is split into three layers:
 .
 ├── main.py                     # CLI entry point (--mode, --config, --file, --attack)
 ├── config.py                   # Configuration loader and validator
-├── config.json                 # Default configuration (security enabled)
-├── config_retransmission.json  # Docker test config (no security, faster timeouts)
-├── docker-compose.yml          # SEED Ubuntu containers for integration tests
+├── config_phase1.json          # Phase 1 Configuration (security disabled)
+├── config_phase2.json          # Phase 2 Configuration (security enabled)
 ├── src/
 │   ├── client.py               # SRFTClient — receiver, reassembly, decryption
 │   ├── server.py               # SRFTServer — sender, retransmission, attack modes
@@ -277,7 +276,7 @@ All tests run on AWS EC2 instances. Packet loss was simulated using `tc netem` o
 
 - **Single concurrent transfer:** the server supports only one active transfer at a time. Any additional concurrent file transfer is not supported, is rejected and results in error packet at client. 
 - **No dynamic congestion control:** the window size is fixed (default is 64). There is no slow-start or AIMD which can lead to higher latency.
-- **PSK is static and visible:** the PSK is stored in `config.json` in plaintext. There is no mechanism for key-rotation, and it is visible in codebase in config.
+- **PSK is static and visible:** the PSK is stored in `config` in plaintext. There is no mechanism for key-rotation, and it is visible in codebase in config.
 
 ---
 
