@@ -16,7 +16,7 @@ def main():
 
     parser.add_argument(
         "--config",
-        default="config.json",
+        default="config_phase2.json",
         help="Path to configuration file"
     )
 

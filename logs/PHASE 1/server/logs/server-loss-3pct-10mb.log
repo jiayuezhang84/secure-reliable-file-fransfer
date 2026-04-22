@@ -1,0 +1,906 @@
+Script started on 2026-04-22 15:53:22+00:00 [COMMAND="cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="222" LINES="30"]
+[SERVER] Listening on 172.31.77.14:50000
+[SERVER][DEBUG] raw packet len=76
+[SERVER][DEBUG] raw packet len=82
+[SERVER][DEBUG] accepted REQ for './gdrive-folder/test_10mb_file'
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 16
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 45
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER] retransmitted DATA seq 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER] retransmitted DATA seq 105
+[SERVER] retransmitted DATA seq 114
+[SERVER] retransmitted DATA seq 129
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 72
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 153
+[SERVER] retransmitted DATA seq 153
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 153
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 153
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 224
+[SERVER] retransmitted DATA seq 224
+[SERVER] retransmitted DATA seq 245
+[SERVER] retransmitted DATA seq 255
+[SERVER] retransmitted DATA seq 286
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 224
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 224
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 304
+[SERVER] retransmitted DATA seq 304
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 304
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 304
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 378
+[SERVER] retransmitted DATA seq 378
+[SERVER] retransmitted DATA seq 387
+[SERVER] retransmitted DATA seq 395
+[SERVER] retransmitted DATA seq 397
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 378
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 378
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 378
+[SERVER] retransmitted DATA seq 378
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 444
+[SERVER] retransmitted DATA seq 444
+[SERVER] retransmitted DATA seq 445
+[SERVER] retransmitted DATA seq 457
+[SERVER] retransmitted DATA seq 469
+[SERVER] retransmitted DATA seq 479
+[SERVER] retransmitted DATA seq 489
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 444
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 444
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 509
+[SERVER] retransmitted DATA seq 509
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 509
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 509
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 620
+[SERVER] retransmitted DATA seq 620
+[SERVER] retransmitted DATA seq 643
+[SERVER] retransmitted DATA seq 671
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 620
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 620
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 620
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 719
+[SERVER] retransmitted DATA seq 719
+[SERVER] retransmitted DATA seq 758
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 719
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 719
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 719
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 809
+[SERVER] retransmitted DATA seq 809
+[SERVER] retransmitted DATA seq 817
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 809
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 809
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 809
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 883
+[SERVER] retransmitted DATA seq 883
+[SERVER] retransmitted DATA seq 898
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 883
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 883
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 990
+[SERVER] retransmitted DATA seq 990
+[SERVER] retransmitted DATA seq 992
+[SERVER] retransmitted DATA seq 1003
+[SERVER] retransmitted DATA seq 1014
+[SERVER] retransmitted DATA seq 1024
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 990
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 990
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 990
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1079
+[SERVER] retransmitted DATA seq 1079
+[SERVER] retransmitted DATA seq 1086
+[SERVER] retransmitted DATA seq 1089
+[SERVER] retransmitted DATA seq 1108
+[SERVER] retransmitted DATA seq 1127
+[SERVER] retransmitted DATA seq 1135
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1079
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1079
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1079
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1194
+[SERVER] retransmitted DATA seq 1194
+[SERVER] retransmitted DATA seq 1224
+[SERVER] retransmitted DATA seq 1227
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1194
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1194
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1194
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1194
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1224
+[SERVER] retransmitted DATA seq 1224
+[SERVER] retransmitted DATA seq 1280
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1224
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1366
+[SERVER] retransmitted DATA seq 1366
+[SERVER] retransmitted DATA seq 1367
+[SERVER] retransmitted DATA seq 1372
+[SERVER] retransmitted DATA seq 1401
+[SERVER] retransmitted DATA seq 1403
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1366
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1366
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1366
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1366
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1401
+[SERVER] retransmitted DATA seq 1401
+[SERVER] retransmitted DATA seq 1403
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1487
+[SERVER] retransmitted DATA seq 1487
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1487
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1487
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1487
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1561
+[SERVER] retransmitted DATA seq 1561
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1561
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1561
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1667
+[SERVER] retransmitted DATA seq 1667
+[SERVER] retransmitted DATA seq 1696
+[SERVER] retransmitted DATA seq 1703
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1667
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1667
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1667
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1746
+[SERVER] retransmitted DATA seq 1746
+[SERVER] retransmitted DATA seq 1757
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1746
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1746
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1846
+[SERVER] retransmitted DATA seq 1846
+[SERVER] retransmitted DATA seq 1863
+[SERVER] retransmitted DATA seq 1872
+[SERVER] retransmitted DATA seq 1893
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1846
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1846
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1846
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1912
+[SERVER] retransmitted DATA seq 1912
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1912
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1912
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1990
+[SERVER] retransmitted DATA seq 1990
+[SERVER] retransmitted DATA seq 2053
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1990
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1990
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 1990
+[SERVER] retransmitted DATA seq 1990
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2102
+[SERVER] retransmitted DATA seq 2102
+[SERVER] retransmitted DATA seq 2135
+[SERVER] retransmitted DATA seq 2152
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2102
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2102
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2102
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2172
+[SERVER] retransmitted DATA seq 2172
+[SERVER] retransmitted DATA seq 2177
+[SERVER] retransmitted DATA seq 2185
+[SERVER] retransmitted DATA seq 2186
+[SERVER] retransmitted DATA seq 2192
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2172
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2172
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2292
+[SERVER] retransmitted DATA seq 2292
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2292
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2292
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2292
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2292
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2402
+[SERVER] retransmitted DATA seq 2402
+[SERVER] retransmitted DATA seq 2435
+[SERVER] retransmitted DATA seq 2448
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2402
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2402
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2402
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2498
+[SERVER] retransmitted DATA seq 2498
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2498
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2498
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2498
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2581
+[SERVER] retransmitted DATA seq 2581
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2581
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2581
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2581
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2651
+[SERVER] retransmitted DATA seq 2651
+[SERVER] retransmitted DATA seq 2654
+[SERVER] retransmitted DATA seq 2665
+[SERVER] retransmitted DATA seq 2671
+[SERVER] retransmitted DATA seq 2683
+[SERVER] retransmitted DATA seq 2688
+[SERVER] retransmitted DATA seq 2708
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2651
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2651
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2718
+[SERVER] retransmitted DATA seq 2718
+[SERVER] retransmitted DATA seq 2777
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2718
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2718
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2826
+[SERVER] retransmitted DATA seq 2826
+[SERVER] retransmitted DATA seq 2888
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2826
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2826
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2826
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2896
+[SERVER] retransmitted DATA seq 2896
+[SERVER] retransmitted DATA seq 2927
+[SERVER] retransmitted DATA seq 2946
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2896
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2896
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2960
+[SERVER] retransmitted DATA seq 2960
+[SERVER] retransmitted DATA seq 2977
+[SERVER] retransmitted DATA seq 2983
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2960
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 2960
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3033
+[SERVER] retransmitted DATA seq 3033
+[SERVER] retransmitted DATA seq 3042
+[SERVER] retransmitted DATA seq 3080
+[SERVER] retransmitted DATA seq 3083
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3033
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3033
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3108
+[SERVER] retransmitted DATA seq 3108
+[SERVER] retransmitted DATA seq 3115
+[SERVER] retransmitted DATA seq 3144
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3108
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3108
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3179
+[SERVER] retransmitted DATA seq 3179
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3179
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3179
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3261
+[SERVER] retransmitted DATA seq 3261
+[SERVER] retransmitted DATA seq 3309
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3261
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3261
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3261
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3337
+[SERVER] retransmitted DATA seq 3337
+[SERVER] retransmitted DATA seq 3350
+[SERVER] retransmitted DATA seq 3364
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3337
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3337
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3433
+[SERVER] retransmitted DATA seq 3433
+[SERVER] retransmitted DATA seq 3458
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3433
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3433
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3433
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3540
+[SERVER] retransmitted DATA seq 3540
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3540
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3540
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3540
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3663
+[SERVER] retransmitted DATA seq 3663
+[SERVER] retransmitted DATA seq 3671
+[SERVER] retransmitted DATA seq 3678
+[SERVER] retransmitted DATA seq 3679
+[SERVER] retransmitted DATA seq 3698
+[SERVER] retransmitted DATA seq 3713
+[SERVER] retransmitted DATA seq 3722
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3663
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3663
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3663
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3663
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3859
+[SERVER] retransmitted DATA seq 3859
+[SERVER] retransmitted DATA seq 3860
+[SERVER] retransmitted DATA seq 3866
+[SERVER] retransmitted DATA seq 3889
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3859
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3859
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3859
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3859
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3859
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3859
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3859
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3889
+[SERVER] retransmitted DATA seq 3889
+[SERVER] retransmitted DATA seq 3939
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 3889
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4013
+[SERVER] retransmitted DATA seq 4013
+[SERVER] retransmitted DATA seq 4017
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4013
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4013
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4013
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4079
+[SERVER] retransmitted DATA seq 4079
+[SERVER] retransmitted DATA seq 4113
+[SERVER] retransmitted DATA seq 4118
+[SERVER] retransmitted DATA seq 4139
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4079
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4079
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4153
+[SERVER] retransmitted DATA seq 4153
+[SERVER] retransmitted DATA seq 4169
+[SERVER] retransmitted DATA seq 4179
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4153
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4153
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4233
+[SERVER] retransmitted DATA seq 4233
+[SERVER] retransmitted DATA seq 4240
+[SERVER] retransmitted DATA seq 4250
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4233
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4233
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4240
+[SERVER] retransmitted DATA seq 4299
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4325
+[SERVER] retransmitted DATA seq 4325
+[SERVER] retransmitted DATA seq 4332
+[SERVER] retransmitted DATA seq 4333
+[SERVER] retransmitted DATA seq 4335
+[SERVER] retransmitted DATA seq 4346
+[SERVER] retransmitted DATA seq 4356
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4325
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4325
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4325
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER] retransmitted DATA seq 4549
+[SERVER] retransmitted DATA seq 4554
+[SERVER] retransmitted DATA seq 4589
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4549
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4554
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4554
+[SERVER] retransmitted DATA seq 4554
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4637
+[SERVER] retransmitted DATA seq 4637
+[SERVER] retransmitted DATA seq 4651
+[SERVER] retransmitted DATA seq 4657
+[SERVER] retransmitted DATA seq 4665
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4637
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4637
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4637
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4702
+[SERVER] retransmitted DATA seq 4702
+[SERVER] retransmitted DATA seq 4703
+[SERVER] retransmitted DATA seq 4718
+[SERVER] retransmitted DATA seq 4729
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4702
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4702
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4815
+[SERVER] retransmitted DATA seq 4815
+[SERVER] retransmitted DATA seq 4821
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4815
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4815
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4815
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4815
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4996
+[SERVER] retransmitted DATA seq 4996
+[SERVER] retransmitted DATA seq 5015
+[SERVER] retransmitted DATA seq 5018
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4996
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4996
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4996
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4996
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4996
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 4996
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5080
+[SERVER] retransmitted DATA seq 5080
+[SERVER] retransmitted DATA seq 5118
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5080
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5080
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5080
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5150
+[SERVER] retransmitted DATA seq 5150
+[SERVER] retransmitted DATA seq 5158
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5150
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5150
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5250
+[SERVER] retransmitted DATA seq 5250
+[SERVER] retransmitted DATA seq 5304
+[SERVER] retransmitted DATA seq 5306
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5250
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5250
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5250
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5365
+[SERVER] retransmitted DATA seq 5365
+[SERVER] retransmitted DATA seq 5380
+[SERVER] retransmitted DATA seq 5381
+[SERVER] retransmitted DATA seq 5396
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5365
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5365
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5365
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5365
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5442
+[SERVER] retransmitted DATA seq 5442
+[SERVER] retransmitted DATA seq 5471
+[SERVER] retransmitted DATA seq 5473
+[SERVER] retransmitted DATA seq 5496
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5442
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5442
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5509
+[SERVER] retransmitted DATA seq 5509
+[SERVER] retransmitted DATA seq 5517
+[SERVER] retransmitted DATA seq 5521
+[SERVER] retransmitted DATA seq 5524
+[SERVER] retransmitted DATA seq 5527
+[SERVER] retransmitted DATA seq 5555
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5509
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5509
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5589
+[SERVER] retransmitted DATA seq 5589
+[SERVER] retransmitted DATA seq 5592
+[SERVER] retransmitted DATA seq 5607
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5589
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5589
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5589
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5669
+[SERVER] retransmitted DATA seq 5669
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5669
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5669
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5669
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5745
+[SERVER] retransmitted DATA seq 5745
+[SERVER] retransmitted DATA seq 5762
+[SERVER] retransmitted DATA seq 5790
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5745
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5745
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5811
+[SERVER] retransmitted DATA seq 5811
+[SERVER] retransmitted DATA seq 5861
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5811
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5811
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5878
+[SERVER] retransmitted DATA seq 5878
+[SERVER] retransmitted DATA seq 5884
+[SERVER] retransmitted DATA seq 5895
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5878
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5878
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5961
+[SERVER] retransmitted DATA seq 5961
+[SERVER] retransmitted DATA seq 5978
+[SERVER] retransmitted DATA seq 6022
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5961
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5961
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 5961
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6035
+[SERVER] retransmitted DATA seq 6035
+[SERVER] retransmitted DATA seq 6066
+[SERVER] retransmitted DATA seq 6076
+[SERVER] retransmitted DATA seq 6086
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6035
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6035
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6137
+[SERVER] retransmitted DATA seq 6137
+[SERVER] retransmitted DATA seq 6144
+[SERVER] retransmitted DATA seq 6148
+[SERVER] retransmitted DATA seq 6173
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6137
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6137
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6137
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6230
+[SERVER] retransmitted DATA seq 6230
+[SERVER] retransmitted DATA seq 6283
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6230
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6230
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6230
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6300
+[SERVER] retransmitted DATA seq 6300
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6300
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6300
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6400
+[SERVER] retransmitted DATA seq 6400
+[SERVER] retransmitted DATA seq 6456
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6400
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6400
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6400
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6464
+[SERVER] retransmitted DATA seq 6464
+[SERVER] retransmitted DATA seq 6493
+[SERVER] retransmitted DATA seq 6509
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6464
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6464
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6588
+[SERVER] retransmitted DATA seq 6588
+[SERVER] retransmitted DATA seq 6608
+[SERVER] retransmitted DATA seq 6641
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6588
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6588
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6588
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6588
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6665
+[SERVER] retransmitted DATA seq 6665
+[SERVER] retransmitted DATA seq 6678
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6665
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6665
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6781
+[SERVER] retransmitted DATA seq 6781
+[SERVER] retransmitted DATA seq 6818
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6781
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6781
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6781
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6781
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6886
+[SERVER] retransmitted DATA seq 6886
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6886
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6886
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6886
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6957
+[SERVER] retransmitted DATA seq 6957
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6957
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 6957
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 7053
+[SERVER] retransmitted DATA seq 7053
+[SERVER] retransmitted DATA seq 7059
+[SERVER] retransmitted DATA seq 7061
+[SERVER] retransmitted DATA seq 7094
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 7131
+[SERVER] retransmitted DATA seq 7131
+[SERVER] retransmitted DATA seq 7171
+[SERVER] retransmitted DATA seq 7187
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 7213
+[SERVER] retransmitted DATA seq 7213
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 7293
+[SERVER] retransmitted DATA seq 7293
+[SERVER] retransmitted DATA seq 7312
+[SERVER] retransmitted DATA seq 7316
+[SERVER] retransmitted DATA seq 7353
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 7364
+[SERVER] retransmitted DATA seq 7364
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 7442
+[SERVER] retransmitted DATA seq 7442
+[SERVER] retransmitted DATA seq 7486
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 7490
+[SERVER][DEBUG] raw packet len=60
+[SERVER][DEBUG] accepted ACK 7491
+
+==================================================
+SERVER REPORT
+==================================================
+Name of the transferred file:             ./gdrive-folder/test_10mb_file
+Size of the transferred file:             10485760 bytes
+Number of packets sent from the server:   7732
+Number of retransmitted packets:          241
+Number of packets received from client:   319
+Time duration of the file transfer:       00:00:03
+Original file MD5:                        f1c9645dbc14efddc7d8a322685f26eb
+Security enabled (PSK + AEAD):            No
+Handshake status:                         Fail
+AEAD authentication failures:             0
+==================================================
+
+[SERVER] Report saved to transfer_report.txt
+[SERVER][DEBUG] raw packet len=76
+^C
+[SERVER] Shutting down
+
+Script done on 2026-04-22 15:53:58+00:00 [COMMAND_EXIT_CODE="0"]

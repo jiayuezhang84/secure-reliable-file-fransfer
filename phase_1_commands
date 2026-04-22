@@ -1,0 +1,161 @@
+PACKET LOSS COMMANDS
+
+check configured packet loss
+sudo tc qdisc show dev ens5
+
+Apply 2 percent packet loss
+sudo tc qdisc replace dev ens5 root netem loss 2%
+
+Apply 3 percent packet loss
+sudo tc qdisc replace dev ens5 root netem loss 3%
+
+Apply 4 percent packet loss
+sudo tc qdisc replace dev ens5 root netem loss 4%
+
+
+remove packet loss
+sudo tc qdisc del dev ens5 root
+
+
+
+# These commands only label the packet-loss condition in the log filename.
+# They do NOT configure packet loss themselves.
+
+###############################################################################
+# 0% packet loss
+###############################################################################
+
+# 10mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-10mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_10mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-10mb.log
+
+# 100mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-100mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_100mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-100mb.log
+
+# 500mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-500mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_500mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-500mb.log
+
+# 800mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-800mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_800mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-800mb.log
+
+# 1gb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-0pct-1gb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_1gb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-0pct-1gb.log
+
+
+###############################################################################
+# 2% packet loss
+###############################################################################
+
+# 10mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-2pct-10mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_10mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-2pct-10mb.log
+
+# 100mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-2pct-100mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_100mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-2pct-100mb.log
+
+# 500mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-2pct-500mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_500mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-2pct-500mb.log
+
+# 800mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-2pct-800mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_800mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-2pct-800mb.log
+
+# 1gb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-2pct-1gb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_1gb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-2pct-1gb.log
+
+
+###############################################################################
+# 3% packet loss
+###############################################################################
+
+# 10mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-3pct-10mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_10mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-3pct-10mb.log
+
+# 100mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-3pct-100mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_100mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-3pct-100mb.log
+
+# 500mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-3pct-500mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_500mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-3pct-500mb.log
+
+# 800mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-3pct-800mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_800mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-3pct-800mb.log
+
+# 1gb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-3pct-1gb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_1gb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-3pct-1gb.log
+
+
+###############################################################################
+# 4% packet loss
+###############################################################################
+
+# 10mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-4pct-10mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_10mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-4pct-10mb.log
+
+# 100mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-4pct-100mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_100mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-4pct-100mb.log
+
+# 500mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-4pct-500mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_500mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-4pct-500mb.log
+
+# 800mb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-4pct-800mb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_800mb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-4pct-800mb.log
+
+# 1gb
+# SERVER
+script -q -c "cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode server --config config_phase1.json" ~/secure-reliable-file-fransfer/logs/server-loss-4pct-1gb.log
+# CLIENT
+script -q -c "cd ~/secure-reliable-file-fransfer && { /usr/bin/time -p sudo PYTHONPATH=. python3 -u main.py --mode client --config config_phase1.json --file ./gdrive-folder/test_1gb_file; } 2>&1" ~/secure-reliable-file-fransfer/logs/client-loss-4pct-1gb.log

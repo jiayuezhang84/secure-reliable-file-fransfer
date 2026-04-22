@@ -1,0 +1,26 @@
+Script started on 2026-04-22 17:59:43+00:00 [COMMAND="cd ~/secure-reliable-file-fransfer && sudo PYTHONPATH=. python3 -u main.py --mode client --config config_wrong_psk.json --file ./gdrive-folder/test_100mb_file" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="222" LINES="30"]
+[CLIENT] running on 172.31.64.201:50000
+[CLIENT] talking to server 172.31.77.14:50000
+[CLIENT] sent ClientHello
+
+==================================================
+CLIENT REPORT
+==================================================
+Security enabled (PSK + AEAD):            Yes
+Handshake status:                         Fail
+Size of the transferred file:             0 bytes
+Number of packets received from server:   0
+Number of duplicate packets:              0
+Replay drops:                             0
+Number of out-of-order packets:           0
+Number of packets with checksum errors:   0
+Time duration of the file transfer:       00:00:00
+Received file MD5:                        N/A
+AEAD authentication failures:             0
+SHA-256 match:                            No
+==================================================
+
+[CLIENT] Report saved to client_report.txt
+[CLIENT] server error: Handshake failed
+
+Script done on 2026-04-22 17:59:48+00:00 [COMMAND_EXIT_CODE="0"]
