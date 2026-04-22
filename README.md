@@ -131,12 +131,17 @@ Client                              Server
 
 ### Security
 
-- **Handshake auth:** HMAC-SHA256 over nonces using PSK — proves both sides know the key without transmitting it
-- **Key derivation:** HKDF-SHA256 with `salt = client_nonce || server_nonce` and `info = "SRFT-session-keys"` produces a fresh 64-byte key material split into `enc_key` (32B) and `ack_key` (32B) per session
-- **Per-packet encryption:** AES-256-GCM with a fresh random 12-byte nonce per packet
-- **AAD:** `session_id || seq || ack || msg_type` (17 bytes) is bound to the GCM tag — any header modification fails authentication
-- **Replay protection:** client tracks all seen sequence numbers in `seen_secure_seqs`; duplicates are dropped and counted
-- **Integrity:** server sends SHA-256 of the full plaintext file in `TYPE_FIN_DIGEST`; client verifies after reassembly
+- **Handshake auth:** HMAC-SHA256 over nonces using PSK — proves both sides know the key without transmitting it. If the PSK is wrong the HMAC won't match and the handshake fails immediately — no file data is ever sent.
+
+- **Key derivation:** HKDF-SHA256 with `salt = client_nonce || server_nonce` and `info = "SRFT-session-keys"` produces a fresh 64-byte key material split into `enc_key` (32B) and `ack_key` (32B) per session. Neither key is ever transmitted — both sides derive the same keys independently.
+
+- **Per-packet encryption:** AES-256-GCM with a fresh random 12-byte nonce per packet. AES-GCM provides both confidentiality and integrity in one operation — if any bit of the ciphertext is modified, decryption returns `None` and the packet is dropped without writing corrupted data to disk. A fresh nonce per packet is required because reusing a nonce with the same key breaks GCM security.
+
+- **AAD:** `session_id || seq || ack || msg_type` (17 bytes) is bound to the GCM tag — any header modification fails authentication.
+
+- **Replay protection:** client tracks all seen sequence numbers in `seen_secure_seqs`; duplicates are dropped and counted.
+
+- **Integrity:** server sends SHA-256 of the full plaintext file in `TYPE_FIN_DIGEST`; client verifies after reassembly. This provides end-to-end file integrity — any corruption of the reassembled file is detected even if individual packets passed AES-GCM verification.
 
 ### Packet Format
 
@@ -260,6 +265,7 @@ All tests run on AWS EC2 instances. Packet loss was simulated using `tc netem` o
 - **Full congestion control with AIMD**: The bitmap SACK is implemented, but the window size remains fixed. Adding slow-start and AIMD on top of the existing SACK would further reduce unnecessary retransmissions under heavy loss.
 - **Multi-client support**: The server currently handles one transfer at a time. A future version could use the session ID as a demultiplexer to support concurrent transfers from multiple clients.
 - **Resumable transfers**: If a transfer is interrupted, the client must start over from scratch. Adding a resume mechanism (tracking which chunks were already received) would make large file transfers more robust.
+- **Web application interface**: Currently the system is operated entirely through the command line. A future version could add a web frontend allowing users to upload files, monitor transfer progress in real time, and view transfer reports through a browser.
 
 ---
 
