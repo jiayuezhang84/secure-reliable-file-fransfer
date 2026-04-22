@@ -16,7 +16,7 @@ A UDP-based file transfer application that combines reliable delivery with stron
 8. [Lessons Learned](#lessons-learned)
 9. [Possible Future Improvements](#possible-future-improvements)
 10. [Meeting Notes](#meeting-notes)
-
+11. [AI Disclosure](#ai-disclosure)
 ---
 
 ## How to Run
@@ -33,14 +33,19 @@ pip install cryptography
 
 ### Running on AWS (Two EC2 Instances)
 
-Edit `config.json` with the private IPs of your two EC2 instances:
+Edit a relevant `config json file` with the private IPs of your two EC2 instances:
 
+`config_phase1.json` used for normal performance testing alongside packet loss.
+
+`config_phase2.json` used for phase 2 security tests, results are more clear with this config.
+
+SAMPLE CONFIG
 ```json
 {
   "network": {
-    "client_ip": "<CLIENT_PRIVATE_IP>",
-    "server_ip": "<SERVER_PRIVATE_IP>",
-    "client_port": 40000,
+    "client_ip": "172.31.64.201",
+    "server_ip": "172.31.77.14",
+    "client_port": 50000,
     "server_port": 50000
   },
   "transfer": {
@@ -49,11 +54,15 @@ Edit `config.json` with the private IPs of your two EC2 instances:
   },
   "timers": {
     "rto_ms": 300,
-    "ack_interval_ms": 50
+    "ack_interval_ms": 50,
+    "handshake_timeout_ms": 3000
   },
   "security": {
     "enabled": true,
-    "psk": "<hex string, minimum 32 characters>"
+    "psk": "<hex string>"
+  },
+  "debug": {
+    "verbose_packet_logs": true
   }
 }
 ```
@@ -61,16 +70,18 @@ Edit `config.json` with the private IPs of your two EC2 instances:
 **On the server EC2 instance** — run first:
 
 ```bash
-sudo PYTHONPATH=. python3 main.py --mode server --config config.json
+sudo PYTHONPATH=. python3 main.py --mode server --config config_phase1.json
 ```
 
 **On the client EC2 instance** — then run:
 
 ```bash
-sudo PYTHONPATH=. python3 main.py --mode client --config config.json --file <filename>
+sudo PYTHONPATH=. python3 main.py --mode client --config config_phase1.json --file <file requested at server name>
 ```
 
-The server writes `transfer_report.txt` and the client writes `client_report.txt` after each transfer completes.
+The server writes `transfer_report.txt` at server instance after each transfer completes.
+
+The client writes `client_report.txt` at client instance after each transfer completes.
 
 ### Running Security Attack Simulation (server side)
 
@@ -78,24 +89,14 @@ These modes inject a deliberate security event to test client-side defenses:
 
 ```bash
 # Flip bits in ciphertext → AEAD authentication failure on client
-sudo PYTHONPATH=. python3 main.py --mode server --config config.json --attack tamper
+sudo PYTHONPATH=. python3 main.py --mode server --config config_phase2.json --attack tamper
 
 # Resend a previously captured packet → replay detection triggers
-sudo PYTHONPATH=. python3 main.py --mode server --config config.json --attack replay
+sudo PYTHONPATH=. python3 main.py --mode server --config config_phase2.json --attack replay
 
 # Send a forged garbage packet → rejected by AEAD tag check
-sudo PYTHONPATH=. python3 main.py --mode server --config config.json --attack inject
+sudo PYTHONPATH=. python3 main.py --mode server --config config_phase2.json --attack inject
 ```
-
-### Running Local Integration Tests (Docker)
-
-```bash
-docker-compose up -d
-./scripts/docker_retransmission_test.sh         # small file
-./scripts/docker_retransmission_test_10mb.sh    # 10 MB file
-```
-
-Both scripts binary-compare sent and received files and fail if they differ.
 
 ---
 
@@ -124,10 +125,10 @@ Client                              Server
 
 ### Reliable Delivery
 
-- **Sliding window:** server sends up to 64 unACKed packets simultaneously (configurable via `send_window_packets`)
-- **Retransmission:** a background thread checks every `rto_ms` (300 ms default) and resends any packet older than the RTO
-- **Cumulative ACKs + Bitmap SACK:** client sends one ACK every `ack_interval_ms` (50 ms) carrying the next expected sequence number plus a bitmap of out-of-order packets already received; server uses the bitmap to retransmit only missing gaps (up to 8 per ACK via `BIT_MAP_RETRANSMIT_LIMIT`)
-- **Out-of-order buffering:** client buffers early-arriving packets and flushes them in order once gaps are filled
+- **Sliding window(SERVER):** server sends up to 64 unACKed packets simultaneously (configurable via `send_window_packets`)
+- **Retransmission:** a background retransmission thread checks every `rto_ms` (300 ms default) and resends any packet older than the RTO
+- **Cumulative ACKs + Bitmap Driven Retransmissions:** client sends one ACK every `ack_interval_ms` (50 ms) carrying the next expected sequence number plus a bitmap(64 packets) of out-of-order packets already received/buffered ahead of base/cumulative acked. The server then selectively retransmits the packets that are not present in client bitmap ahead of cumulative ack(up to 8 per ACK via `BIT_MAP_RETRANSMIT_LIMIT`) or are unacked and timed out at server.
+- **Out-of-order buffering(CLIENT):** client buffers early-arriving packets and writes them to disk in order once gaps are filled
 
 ### Security
 
@@ -182,7 +183,7 @@ Packet types: `REQ(1)`, `DATA(2)`, `ACK(3)`, `FIN(4)`, `ERR(5)`, `HELLO_CLIENT(6
 
 The application is split into three layers:
 
-**Transport layer** (`src/core/ip.py`, `src/core/udp.py`): manual construction and parsing of raw IPv4 and UDP headers using `struct.pack`. Requires `IP_HDRINCL` and `sudo`. Handles macOS vs. Linux byte-order differences.
+**Transport layer** (`src/core/ip.py`, `src/core/udp.py`): manual construction and parsing of raw IPv4 and UDP headers using `struct.pack`. Requires `IP_HDRINCL` and `sudo`.
 
 **Protocol layer** (`src/core/packet.py`, `src/seq_ack.py`): defines the 24-byte SRFT header format, pack/unpack functions, Internet checksum, and sliding window / ACK tracking utilities.
 
@@ -213,9 +214,7 @@ The application is split into three layers:
 │       └── udp.py              # UDP header construction and parsing
 └── scripts/
     ├── run_server.sh
-    ├── run_client.sh
-    ├── docker_retransmission_test.sh
-    └── docker_retransmission_test_10mb.sh
+    └── run_client.sh
 ```
 
 ---
@@ -235,21 +234,18 @@ All tests run on AWS EC2 instances. Packet loss was simulated using `tc netem` o
 
 ## Known Limitations and Errors
 
-- **Single concurrent transfer:** the server supports only one active transfer at a time. A second `TYPE_REQ` while a transfer is in progress receives a `TYPE_ERR` response.
+- **Single concurrent transfer:** the server supports only one active transfer at a time. Any additional concurrent file transfer is not supported, is rejected and results in error packet at client. 
 - **No dynamic congestion control:** the window size is fixed (default is 64). There is no slow-start or AIMD which can lead to higher latency.
-- **Raw socket filtering:** both server and client use raw sockets and filter by IP/port in software. On hosts with busy background traffic, irrelevant packets are parsed and discarded, which causes CPU overhead.
-- **No fragmentation handling:** packets larger than the path MTU may be silently dropped by the network. The default `chunk_size` of 1200 bytes is chosen to stay well under typical Ethernet MTU (1500 bytes) but this is not dynamically negotiated.
-- **PSK is static:** the PSK is stored in `config.json` in plaintext. There is no key rotation or certificate-based authentication.
+- **PSK is static and visible:** the PSK is stored in `config.json` in plaintext. There is no mechanism for key-rotation, and it is visible in codebase in config.
 
 ---
 
 ## Lessons Learned
 - **AEAD matters in practice**: Before adding AAD, tampering with a packet's seq number and the receiver wouldn't be noticed. The outer SRFT checksum can be recalculated by the attacker. Only the GCM tag can prevent header manipulation.
 - **Unique Nonce is critical**: If reusing a nonce with the same key, AES-GCM can be broken. Setting nonce as a fresh random 12 bytes per packet is a better design decision.
-- **UDP can't guarantee delivery**: When simulating packet loss with tc netem, the out-of-order buffer becomes necessary.
-- **Checksums are not security**: The SRFT header checksum detects accidental corruption but not intentional tampering. An attacker can flip bits and recompute a valid checksum. This reinforced that integrity and authenticity require cryptographic primitives, not just checksums.
-- **Sliding window sizing matters**: A window that is too small underutilizes the network; too large fills buffers and causes avoidable drops. Tuning the default to 64 packets was a balance between throughput and memory use.
-
+- **Buffered receival at client crucial**: When simulating packet loss with tc netem, the out-of-order buffer + retransmissions becomes necessary to keep packets we receive out of order, and try again for packets not received and acked.
+- **Checksums cannot reveal intention**: The SRFT header checksum detects accidental corruption but not intentional tampering. An attacker can flip bits and recompute a valid checksum. Matching cryptographic hashes help with this.
+- **Bit Map**: Using bit map to track packets beyond cumulative ack but still received early at client, and passing this bitmap to server helps server to selectively retransmit packets which are needed at client, drastically reducing retransmissions.   
 ---
 
 ## Possible Future Improvements
@@ -311,5 +307,12 @@ SHA-256 match:                            Yes
 ## Meeting Notes
 ### Link: [Meeting notes and project management tools Google Doc](https://docs.google.com/document/d/1pn3BFcJAlB4Dd3i4K-3ii5pTBZ-inJ_5vCT1wfeDVrU/edit?tab=t.0)
 ---
+
+## AI Disclosure
+AI was helpful in
+   - setting up the EC2 instances => had not done this before, so AI helped tell and learn the setup steps and verify correct setup
+   - generate commands to do testing of server and client => helped to identify and learn the packet loss commands in EC2 ubuntu instance and generate repetitive commands for creating different output files for different runs
+   - Initially we were facing 5x performance loss when doing packet loss of 4%. We brainstormed ideas of how to tackle this, and AI suggested BIT_MAP, so that we only retransmit the missing packets to client in our cumulative ACK setup. Then we learned and implemented the bitmap concept, which caused retransmission of packets to reduce drastically and performance under packet loss improved as well.
+
 ## Contributors
 Arunit Baidya, Yun Ma, Kole Agava, Jiayue Zhang
